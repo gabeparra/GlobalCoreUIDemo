@@ -11,31 +11,103 @@ import {
     CRow,
     CCol,
     CFormTextarea,
+    CAlert,
+    CSpinner,
 } from "@coreui/react"
+import { useNavigate } from 'react-router-dom'
 
 export default function DocumentRequestForm() {
+    const navigate = useNavigate()
+    const [loading, setLoading] = useState(false)
+    const [error, setError] = useState(null)
+    const [success, setSuccess] = useState(false)
+
     const [formData, setFormData] = useState({
         requestId: "DR2502312",
-        ucfId: import.meta.env.VITE_PLACEHOLDER_UCF_ID || "",
-        firstName: import.meta.env.VITE_PLACEHOLDER_GIVEN_NAME || "",
-        lastName: import.meta.env.VITE_PLACEHOLDER_FAMILY_NAME || "",
-        email: import.meta.env.VITE_PLACEHOLDER_STUDENT_EMAIL || "",
-        phoneNumber: import.meta.env.VITE_PLACEHOLDER_US_TELEPHONE || "",
-        dateOfBirth: import.meta.env.VITE_PLACEHOLDER_DATE_OF_BIRTH || "",
+        ucfId: import.meta.env.VITE_PLACEHOLDER_UCF_ID || "1234567",
+        firstName: import.meta.env.VITE_PLACEHOLDER_GIVEN_NAME || "John",
+        lastName: import.meta.env.VITE_PLACEHOLDER_FAMILY_NAME || "Smith",
+        email: import.meta.env.VITE_PLACEHOLDER_STUDENT_EMAIL || "john.smith@ucf.edu",
+        phoneNumber: import.meta.env.VITE_PLACEHOLDER_US_TELEPHONE || "407-123-4567",
+        dateOfBirth: import.meta.env.VITE_PLACEHOLDER_DATE_OF_BIRTH || "1995-01-15",
         gender: "male",
         globalStudentDocument: "",
         undergradDocument: "",
-        format: "",
+        format: "email",
         additionalInfo: "",
     })
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault()
-        console.log("Form submitted:", formData)
+        setLoading(true)
+        setError(null)
+        setSuccess(false)
+
+        try {
+            // Validate required fields
+            if (!formData.globalStudentDocument && !formData.undergradDocument) {
+                throw new Error('Please select at least one document type.')
+            }
+
+            if (!formData.format) {
+                throw new Error('Please select a delivery format.')
+            }
+
+            // Create student name from first and last name
+            const studentName = `${formData.firstName} ${formData.lastName}`.trim()
+
+            // Convert form data to snake_case for backend
+            const requestData = {
+                student_name: studentName,
+                student_id: formData.ucfId,
+                program: "Document Request",
+                request_id: formData.requestId,
+                ucf_id: formData.ucfId,
+                first_name: formData.firstName,
+                last_name: formData.lastName,
+                email: formData.email,
+                phone_number: formData.phoneNumber,
+                date_of_birth: formData.dateOfBirth,
+                gender: formData.gender,
+                global_student_document: formData.globalStudentDocument,
+                undergrad_document: formData.undergradDocument,
+                format: formData.format,
+                additional_info: formData.additionalInfo
+            }
+
+            console.log('Submitting Document Request:', requestData)
+
+            const response = await fetch('http://localhost:8000/api/document-requests/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(requestData)
+            })
+
+            if (!response.ok) {
+                const errorData = await response.text()
+                throw new Error(`Server error: ${response.status} - ${errorData}`)
+            }
+
+            const result = await response.json()
+            console.log('Document Request submitted successfully:', result)
+
+            setSuccess(true)
+            setTimeout(() => {
+                navigate('/')
+            }, 2000)
+
+        } catch (err) {
+            console.error('Error submitting Document Request:', err)
+            setError(err.message)
+        } finally {
+            setLoading(false)
+        }
     }
 
     const handleCancel = () => {
-        console.log("Changes cancelled")
+        navigate('/')
     }
 
     return (
@@ -48,6 +120,9 @@ export default function DocumentRequestForm() {
 
                 {/* Form Content */}
                 <CContainer className="py-4">
+                    {error && <CAlert color="danger" className="mb-3">{error}</CAlert>}
+                    {success && <CAlert color="success" className="mb-3">Document Request submitted successfully! Redirecting...</CAlert>}
+
                     <CForm onSubmit={handleSubmit}>
                         {/* Personal Data Section */}
                         <div className="mb-4">
@@ -340,10 +415,17 @@ export default function DocumentRequestForm() {
 
                         {/* Action Buttons */}
                         <div className="d-flex gap-2">
-                            <CButton type="submit" color="success" className="text-white">
-                                Submit
+                            <CButton type="submit" color="success" className="text-white" disabled={loading}>
+                                {loading ? (
+                                    <>
+                                        <CSpinner size="sm" className="me-2" />
+                                        Submitting...
+                                    </>
+                                ) : (
+                                    'Submit'
+                                )}
                             </CButton>
-                            <CButton type="button" color="danger" onClick={handleCancel} className="text-white">
+                            <CButton type="button" color="danger" onClick={handleCancel} className="text-white" disabled={loading}>
                                 Cancel Changes
                             </CButton>
                         </div>

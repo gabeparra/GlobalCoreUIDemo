@@ -24,12 +24,13 @@ export default function AllRequestsList() {
             setLoading(true)
 
             // Fetch all request types
-            const [i20Response, academicResponse, administrativeResponse, conversationResponse, optResponse] = await Promise.all([
+            const [i20Response, academicResponse, administrativeResponse, conversationResponse, optResponse, documentResponse] = await Promise.all([
                 fetch('http://localhost:8000/api/i20-requests/'),
                 fetch('http://localhost:8000/api/academic-training/'),
                 fetch('http://localhost:8000/api/administrative-record/'),
                 fetch('http://localhost:8000/api/conversation-partner/'),
-                fetch('http://localhost:8000/api/opt-requests/')
+                fetch('http://localhost:8000/api/opt-requests/'),
+                fetch('http://localhost:8000/api/document-requests/')
             ])
 
             if (!i20Response.ok) {
@@ -52,19 +53,25 @@ export default function AllRequestsList() {
                 throw new Error(`OPT Request HTTP error! Status: ${optResponse.status}`)
             }
 
+            if (!documentResponse.ok) {
+                throw new Error(`Document Request HTTP error! Status: ${documentResponse.status}`)
+            }
+
             const i20Data = await i20Response.json()
             const academicData = await academicResponse.json()
             const administrativeData = await administrativeResponse.json()
             const conversationData = await conversationResponse.json()
             const optData = await optResponse.json()
+            const documentData = await documentResponse.json()
 
             // Combine all datasets
-            const allRequests = [...i20Data, ...academicData, ...administrativeData, ...conversationData, ...optData]
+            const allRequests = [...i20Data, ...academicData, ...administrativeData, ...conversationData, ...optData, ...documentData]
             console.log('Fetched I-20 requests:', i20Data.length)
             console.log('Fetched Academic Training requests:', academicData.length)
             console.log('Fetched Administrative Record requests:', administrativeData.length)
             console.log('Fetched Conversation Partner requests:', conversationData.length)
             console.log('Fetched OPT requests:', optData.length)
+            console.log('Fetched Document requests:', documentData.length)
             console.log('Total requests:', allRequests.length)
 
             setRequests(allRequests)
@@ -92,6 +99,8 @@ export default function AllRequestsList() {
                 endpoint = `http://localhost:8000/api/conversation-partner/${requestId}`
             } else if (program === 'OPT Request') {
                 endpoint = `http://localhost:8000/api/opt-requests/${requestId}`
+            } else if (program === 'Document Request') {
+                endpoint = `http://localhost:8000/api/document-requests/${requestId}`
             } else {
                 endpoint = `http://localhost:8000/api/i20-requests/${requestId}`
             }
@@ -146,6 +155,8 @@ export default function AllRequestsList() {
                     endpoint = `http://localhost:8000/api/conversation-partner/${reqId}`
                 } else if (request.program === 'OPT Request') {
                     endpoint = `http://localhost:8000/api/opt-requests/${reqId}`
+                } else if (request.program === 'Document Request') {
+                    endpoint = `http://localhost:8000/api/document-requests/${reqId}`
                 } else {
                     endpoint = `http://localhost:8000/api/i20-requests/${reqId}`
                 }
@@ -190,21 +201,23 @@ export default function AllRequestsList() {
             setDeleteSuccess(false)
 
             // Delete from all endpoints
-            const [i20Response, academicResponse, administrativeResponse, conversationResponse, optResponse] = await Promise.all([
+            const [i20Response, academicResponse, administrativeResponse, conversationResponse, optResponse, documentResponse] = await Promise.all([
                 fetch('http://localhost:8000/api/i20-requests/', { method: 'DELETE' }),
                 fetch('http://localhost:8000/api/academic-training/', { method: 'DELETE' }),
                 fetch('http://localhost:8000/api/administrative-record/', { method: 'DELETE' }),
                 fetch('http://localhost:8000/api/conversation-partner/', { method: 'DELETE' }),
-                fetch('http://localhost:8000/api/opt-requests/', { method: 'DELETE' })
+                fetch('http://localhost:8000/api/opt-requests/', { method: 'DELETE' }),
+                fetch('http://localhost:8000/api/document-requests/', { method: 'DELETE' })
             ])
 
-            if (!i20Response.ok || !academicResponse.ok || !administrativeResponse.ok || !conversationResponse.ok || !optResponse.ok) {
+            if (!i20Response.ok || !academicResponse.ok || !administrativeResponse.ok || !conversationResponse.ok || !optResponse.ok || !documentResponse.ok) {
                 const i20Error = i20Response.ok ? '' : await i20Response.text()
                 const academicError = academicResponse.ok ? '' : await academicResponse.text()
                 const adminError = administrativeResponse.ok ? '' : await administrativeResponse.text()
                 const conversationError = conversationResponse.ok ? '' : await conversationResponse.text()
                 const optError = optResponse.ok ? '' : await optResponse.text()
-                throw new Error(`Failed to delete requests: ${i20Error} ${academicError} ${adminError} ${conversationError} ${optError}`)
+                const documentError = documentResponse.ok ? '' : await documentResponse.text()
+                throw new Error(`Failed to delete requests: ${i20Error} ${academicError} ${adminError} ${conversationError} ${optError} ${documentError}`)
             }
 
             console.log('All requests deleted successfully')
@@ -289,12 +302,14 @@ export default function AllRequestsList() {
         req.program !== 'Academic Training' &&
         req.program !== 'Administrative Record Change' &&
         req.program !== 'Conversation Partner' &&
-        req.program !== 'OPT Request'
+        req.program !== 'OPT Request' &&
+        req.program !== 'Document Request'
     );
     const academicTrainingRequests = requests.filter(req => req.program === 'Academic Training');
     const administrativeRecordRequests = requests.filter(req => req.program === 'Administrative Record Change');
     const conversationPartnerRequests = requests.filter(req => req.program === 'Conversation Partner');
     const optRequests = requests.filter(req => req.program === 'OPT Request');
+    const documentRequests = requests.filter(req => req.program === 'Document Request');
 
     // Get request type
     const getRequestType = (request) => {
@@ -317,6 +332,9 @@ export default function AllRequestsList() {
         } else if (request.program === 'OPT Request') {
             const academicLevel = request.form_data?.academic_level || 'N/A';
             return `OPT Request: ${academicLevel}`;
+        } else if (request.program === 'Document Request') {
+            const documentType = request.form_data?.global_student_document || request.form_data?.undergrad_document || 'N/A';
+            return `Document Request: ${documentType}`;
         } else {
             return request.program;
         }
@@ -419,6 +437,15 @@ export default function AllRequestsList() {
                                             role="tab"
                                         >
                                             OPT Requests ({optRequests.length})
+                                        </CNavLink>
+                                    </CNavItem>
+                                    <CNavItem>
+                                        <CNavLink
+                                            active={activeTab === 7}
+                                            onClick={() => setActiveTab(7)}
+                                            role="tab"
+                                        >
+                                            Document Requests ({documentRequests.length})
                                         </CNavLink>
                                     </CNavItem>
                                 </CNav>
@@ -779,6 +806,76 @@ export default function AllRequestsList() {
                                             </CTableBody>
                                         </CTable>
                                     </CTabPane>
+
+                                    <CTabPane role="tabpanel" visible={activeTab === 7}>
+                                        <CTable hover responsive>
+                                            <CTableHead>
+                                                <CTableRow>
+                                                    <CTableHeaderCell scope="col">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={selectedRequests.length === documentRequests.length && documentRequests.length > 0}
+                                                            onChange={() => toggleSelectAll(documentRequests)}
+                                                        />
+                                                    </CTableHeaderCell>
+                                                    <CTableHeaderCell scope="col">#</CTableHeaderCell>
+                                                    <CTableHeaderCell scope="col">Student Name</CTableHeaderCell>
+                                                    <CTableHeaderCell scope="col">Student ID</CTableHeaderCell>
+                                                    <CTableHeaderCell scope="col">Document Type</CTableHeaderCell>
+                                                    <CTableHeaderCell scope="col">Delivery Format</CTableHeaderCell>
+                                                    <CTableHeaderCell scope="col">Submission Date</CTableHeaderCell>
+                                                    <CTableHeaderCell scope="col">Status</CTableHeaderCell>
+                                                    <CTableHeaderCell scope="col">Actions</CTableHeaderCell>
+                                                </CTableRow>
+                                            </CTableHead>
+                                            <CTableBody>
+                                                {documentRequests.map((request) => (
+                                                    <CTableRow key={request.id}>
+                                                        <CTableDataCell>
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={selectedRequests.includes(request.id)}
+                                                                onChange={() => toggleSelection(request.id)}
+                                                            />
+                                                        </CTableDataCell>
+                                                        <CTableHeaderCell scope="row">{request.id}</CTableHeaderCell>
+                                                        <CTableDataCell>{request.student_name}</CTableDataCell>
+                                                        <CTableDataCell>{request.student_id}</CTableDataCell>
+                                                        <CTableDataCell>
+                                                            {request.form_data?.global_student_document || request.form_data?.undergrad_document || 'N/A'}
+                                                        </CTableDataCell>
+                                                        <CTableDataCell>
+                                                            {request.form_data?.format || 'N/A'}
+                                                        </CTableDataCell>
+                                                        <CTableDataCell>{formatDate(request.submission_date)}</CTableDataCell>
+                                                        <CTableDataCell>
+                                                            <span className={`badge bg-${request.status === 'pending' ? 'warning' : 'success'}`}>
+                                                                {request.status}
+                                                            </span>
+                                                        </CTableDataCell>
+                                                        <CTableDataCell>
+                                                            <CButton
+                                                                size="sm"
+                                                                color="danger"
+                                                                className="me-2"
+                                                                onClick={() => deleteRequest(request.id, request.program)}
+                                                                disabled={isDeleting}
+                                                            >
+                                                                Delete
+                                                            </CButton>
+                                                            <CButton
+                                                                size="sm"
+                                                                color="primary"
+                                                                onClick={() => viewRequest(request)}
+                                                            >
+                                                                View
+                                                            </CButton>
+                                                        </CTableDataCell>
+                                                    </CTableRow>
+                                                ))}
+                                            </CTableBody>
+                                        </CTable>
+                                    </CTabPane>
                                 </CTabContent>
 
                                 <h4 className="mt-4">Detailed Request Data</h4>
@@ -794,7 +891,9 @@ export default function AllRequestsList() {
                                                             ? 'Conversation Partner'
                                                             : request.program === 'OPT Request'
                                                                 ? 'OPT Request'
-                                                                : 'I-20'} Request #{request.id} - {request.student_name}
+                                                                : request.program === 'Document Request'
+                                                                    ? 'Document Request'
+                                                                    : 'I-20'} Request #{request.id} - {request.student_name}
                                             </CAccordionHeader>
                                             <CAccordionBody>
                                                 <h5>Basic Information</h5>
@@ -870,7 +969,9 @@ export default function AllRequestsList() {
                                             ? 'Conversation Partner Application'
                                             : selectedRequest.program === 'OPT Request'
                                                 ? 'OPT Request Application'
-                                                : 'I-20 Request'} #{selectedRequest.id}
+                                                : selectedRequest.program === 'Document Request'
+                                                    ? 'Document Request'
+                                                    : 'I-20 Request'} #{selectedRequest.id}
                             </>
                         )}
                     </CModalTitle>

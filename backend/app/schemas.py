@@ -315,3 +315,38 @@ class OPTRequest(OPTRequestBase):
     class Config:
         from_attributes = True
         populate_by_name = True
+
+class DocumentRequestBase(BaseModel):
+    # Required basic fields
+    student_name: str
+    student_id: str
+    program: str = "Document Request"
+    
+    # Personal Information
+    request_id: Optional[str] = None
+    ucf_id: Optional[str] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    email: Optional[str] = None
+    phone_number: Optional[str] = None
+    date_of_birth: Optional[str] = None
+    gender: Optional[str] = None
+    
+    # Document Information
+    global_student_document: Optional[str] = None
+    undergrad_document: Optional[str] = None
+    format: Optional[str] = None
+    additional_info: Optional[str] = None
+
+class DocumentRequestCreate(DocumentRequestBase):
+    pass
+
+class DocumentRequest(DocumentRequestBase):
+    id: int
+    submission_date: datetime
+    status: str
+    form_data: Optional[Dict[str, Any]] = None
+
+    class Config:
+        from_attributes = True
+        populate_by_name = True

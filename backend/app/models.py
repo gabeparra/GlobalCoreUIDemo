@@ -84,3 +84,18 @@ class OPTRequest(Base):
     
     # Store all form data as JSON
     form_data = Column(JSON, nullable=True)
+
+class DocumentRequest(Base):
+    __tablename__ = "document_requests"
+
+    id = Column(Integer, primary_key=True, index=True)
+    
+    # Required basic fields
+    student_name = Column(String, index=True)
+    student_id = Column(String, index=True)
+    program = Column(String, default="Document Request")
+    submission_date = Column(DateTime)
+    status = Column(String, default="pending")
+    
+    # Store all form data as JSON
+    form_data = Column(JSON, nullable=True)

@@ -682,3 +682,79 @@ def delete_all_opt_requests(db: Session = Depends(get_db)):
         db.rollback()
         print(f"Error deleting OPT requests: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error deleting OPT requests: {str(e)}")
+
+# Document Request endpoints
+@router.post("/document-requests/", response_model=schemas.DocumentRequest)
+def create_document_request(request: schemas.DocumentRequestCreate, db: Session = Depends(get_db)):
+    """Create a new Document Request"""
+    try:
+        print(f"Received Document Request: {request}")
+        
+        # Convert the request model to a dict for JSON storage
+        form_data = request.dict(exclude={"student_name", "student_id", "program"})
+        
+        # Create the database record
+        db_request = models.DocumentRequest(
+            student_name=request.student_name,
+            student_id=request.student_id,
+            program=request.program,
+            submission_date=datetime.now(),
+            status="pending",
+            form_data=form_data
+        )
+        
+        db.add(db_request)
+        db.commit()
+        db.refresh(db_request)
+        
+        print(f"Document Request created with ID: {db_request.id}")
+        return db_request
+    except Exception as e:
+        print(f"Error processing Document Request: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=400, detail=f"Error processing Document Request: {str(e)}")
+
+@router.get("/document-requests/", response_model=List[schemas.DocumentRequest])
+def get_document_requests(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    requests = db.query(models.DocumentRequest).offset(skip).limit(limit).all()
+    print(f"Returning {len(requests)} Document requests")
+    return requests
+
+@router.get("/document-requests/{request_id}", response_model=schemas.DocumentRequest)
+def get_document_request(request_id: int, db: Session = Depends(get_db)):
+    db_request = db.query(models.DocumentRequest).filter(models.DocumentRequest.id == request_id).first()
+    if db_request is None:
+        raise HTTPException(status_code=404, detail="Document request not found")
+    print(f"Returning Document request with ID: {request_id}")
+    return db_request
+
+@router.delete("/document-requests/{request_id}", status_code=204)
+def delete_document_request(request_id: int, db: Session = Depends(get_db)):
+    """Delete a specific Document request"""
+    db_request = db.query(models.DocumentRequest).filter(models.DocumentRequest.id == request_id).first()
+    if db_request is None:
+        raise HTTPException(status_code=404, detail="Document request not found")
+    
+    db.delete(db_request)
+    db.commit()
+    print(f"Deleted Document request ID: {request_id}")
+    return {"message": "Document request deleted successfully"}
+
+@router.delete("/document-requests/", status_code=204)
+def delete_all_document_requests(db: Session = Depends(get_db)):
+    """Delete all Document requests from the database"""
+    try:
+        # Count how many records will be deleted
+        count = db.query(models.DocumentRequest).count()
+        
+        # Delete all records
+        db.query(models.DocumentRequest).delete()
+        db.commit()
+        
+        print(f"Deleted {count} Document requests")
+        return {"message": f"Successfully deleted {count} Document requests"}
+    except Exception as e:
+        db.rollback()
+        print(f"Error deleting Document requests: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error deleting Document requests: {str(e)}")
