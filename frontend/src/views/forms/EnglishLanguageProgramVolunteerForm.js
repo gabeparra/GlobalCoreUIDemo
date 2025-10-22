@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { useNavigate } from 'react-router-dom'
 import "@coreui/coreui/dist/css/coreui.min.css"
 import {
     CForm,
@@ -11,41 +12,132 @@ import {
     CRow,
     CCol,
     CFormTextarea,
+    CAlert,
+    CSpinner,
 } from "@coreui/react"
 
 export default function EnglishLanguageProgramsVolunteerForm() {
+    const navigate = useNavigate()
+    const [loading, setLoading] = useState(false)
+    const [error, setError] = useState(null)
+    const [success, setSuccess] = useState(false)
+
     const [formData, setFormData] = useState({
         ucfId: import.meta.env.VITE_PLACEHOLDER_UCF_ID || "",
         firstName: import.meta.env.VITE_PLACEHOLDER_GIVEN_NAME || "",
         lastName: import.meta.env.VITE_PLACEHOLDER_FAMILY_NAME || "",
         ucfEmail: import.meta.env.VITE_PLACEHOLDER_STUDENT_EMAIL || "",
-        academicLevel: "",
+        academicLevel: "graduate",
         courseName: "English 101",
         courseInstructor: "Dr. John Doe",
-        college: "College of Arts and Humanities",
-        term: "Fall 2025",
+        college: "arts-humanities",
+        term: "fall-2025",
         positions: {
-            intensiveEnglish: false,
+            intensiveEnglish: true,
             onlineEnglish: false,
         },
-        hoursPerWeek: "1-2 hours",
+        hoursPerWeek: "1-2",
         availability: {
-            monday: { morning: false, afternoon: false, evening: false },
-            tuesday: { morning: false, afternoon: false, evening: false },
-            wednesday: { morning: false, afternoon: false, evening: false },
-            thursday: { morning: false, afternoon: false, evening: false },
-            friday: { morning: false, afternoon: false, evening: false },
+            monday: { morning: true, afternoon: false, evening: false },
+            tuesday: { morning: false, afternoon: true, evening: false },
+            wednesday: { morning: true, afternoon: false, evening: false },
+            thursday: { morning: false, afternoon: false, evening: true },
+            friday: { morning: true, afternoon: true, evening: false },
         },
         remarks: "I am available to help international students improve their English language skills.",
     })
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault()
-        console.log("Form submitted:", formData)
+        setLoading(true)
+        setError(null)
+        setSuccess(false)
+
+        try {
+            // Validate required fields
+            if (!formData.ucfId || !formData.firstName || !formData.lastName || !formData.ucfEmail) {
+                throw new Error('Please fill in all required fields.')
+            }
+
+            if (!formData.academicLevel) {
+                throw new Error('Please select an academic level.')
+            }
+
+            if (!formData.positions.intensiveEnglish && !formData.positions.onlineEnglish) {
+                throw new Error('Please select at least one position.')
+            }
+
+            // Create student name from first and last name
+            const studentName = `${formData.firstName} ${formData.lastName}`.trim()
+
+            // Convert form data to snake_case for backend
+            const requestData = {
+                student_name: studentName,
+                student_id: formData.ucfId,
+                program: "English Language Program Volunteer",
+                ucf_id: formData.ucfId,
+                first_name: formData.firstName,
+                last_name: formData.lastName,
+                ucf_email: formData.ucfEmail,
+                academic_level: formData.academicLevel,
+                course_name: formData.courseName,
+                course_instructor: formData.courseInstructor,
+                college: formData.college,
+                term: formData.term,
+                position_intensive_english: formData.positions.intensiveEnglish,
+                position_online_english: formData.positions.onlineEnglish,
+                hours_per_week: formData.hoursPerWeek,
+                availability_monday_morning: formData.availability.monday.morning,
+                availability_monday_afternoon: formData.availability.monday.afternoon,
+                availability_monday_evening: formData.availability.monday.evening,
+                availability_tuesday_morning: formData.availability.tuesday.morning,
+                availability_tuesday_afternoon: formData.availability.tuesday.afternoon,
+                availability_tuesday_evening: formData.availability.tuesday.evening,
+                availability_wednesday_morning: formData.availability.wednesday.morning,
+                availability_wednesday_afternoon: formData.availability.wednesday.afternoon,
+                availability_wednesday_evening: formData.availability.wednesday.evening,
+                availability_thursday_morning: formData.availability.thursday.morning,
+                availability_thursday_afternoon: formData.availability.thursday.afternoon,
+                availability_thursday_evening: formData.availability.thursday.evening,
+                availability_friday_morning: formData.availability.friday.morning,
+                availability_friday_afternoon: formData.availability.friday.afternoon,
+                availability_friday_evening: formData.availability.friday.evening,
+                remarks: formData.remarks
+            }
+
+            console.log('Submitting English Language Program Volunteer Form:', requestData)
+
+            const response = await fetch('http://localhost:8000/api/english-language-volunteer/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(requestData)
+            })
+
+            if (!response.ok) {
+                const errorData = await response.text()
+                throw new Error(`Server error: ${response.status} - ${errorData}`)
+            }
+
+            const result = await response.json()
+            console.log('English Language Program Volunteer Form submitted successfully:', result)
+
+            setSuccess(true)
+            setTimeout(() => {
+                navigate('/forms/all-requests')
+            }, 2000)
+
+        } catch (err) {
+            console.error('Error submitting English Language Program Volunteer Form:', err)
+            setError(err.message)
+        } finally {
+            setLoading(false)
+        }
     }
 
     const handleCancel = () => {
-        console.log("Changes cancelled")
+        navigate('/')
     }
 
     const handleGetStudentInfo = () => {
@@ -95,6 +187,9 @@ export default function EnglishLanguageProgramsVolunteerForm() {
 
                 {/* Form Content */}
                 <CContainer className="py-4">
+                    {error && <CAlert color="danger" className="mb-3">{error}</CAlert>}
+                    {success && <CAlert color="success" className="mb-3">English Language Program Volunteer Form submitted successfully! Redirecting...</CAlert>}
+
                     <CForm onSubmit={handleSubmit}>
                         {/* Volunteer Information Section */}
                         <div className="bg-warning text-dark px-3 py-2 mb-3 fw-semibold">Volunteer Information</div>
@@ -128,7 +223,6 @@ export default function EnglishLanguageProgramsVolunteerForm() {
                                         type="text"
                                         value={formData.firstName}
                                         onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                                        className="bg-light"
                                     />
                                 </div>
                             </CCol>
@@ -144,7 +238,6 @@ export default function EnglishLanguageProgramsVolunteerForm() {
                                         type="text"
                                         value={formData.lastName}
                                         onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                                        className="bg-light"
                                     />
                                 </div>
                             </CCol>
@@ -160,7 +253,6 @@ export default function EnglishLanguageProgramsVolunteerForm() {
                                         type="email"
                                         value={formData.ucfEmail}
                                         onChange={(e) => setFormData({ ...formData, ucfEmail: e.target.value })}
-                                        className="bg-light"
                                     />
                                 </div>
                             </CCol>
@@ -362,10 +454,17 @@ export default function EnglishLanguageProgramsVolunteerForm() {
 
                         {/* Action Buttons */}
                         <div className="d-flex gap-2">
-                            <CButton type="submit" color="success" className="text-white">
-                                Submit
+                            <CButton type="submit" color="success" className="text-white" disabled={loading}>
+                                {loading ? (
+                                    <>
+                                        <CSpinner size="sm" className="me-2" />
+                                        Submitting...
+                                    </>
+                                ) : (
+                                    'Submit'
+                                )}
                             </CButton>
-                            <CButton type="button" color="danger" onClick={handleCancel} className="text-white">
+                            <CButton type="button" color="danger" onClick={handleCancel} className="text-white" disabled={loading}>
                                 Cancel Changes
                             </CButton>
                         </div>

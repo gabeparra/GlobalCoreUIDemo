@@ -758,3 +758,91 @@ def delete_all_document_requests(db: Session = Depends(get_db)):
         db.rollback()
         print(f"Error deleting Document requests: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error deleting Document requests: {str(e)}")
+
+# English Language Volunteer Request endpoints
+@router.post("/english-language-volunteer/", response_model=schemas.EnglishLanguageVolunteerRequest)
+def create_english_language_volunteer_request(request: schemas.EnglishLanguageVolunteerRequestCreate, db: Session = Depends(get_db)):
+    try:
+        print(f"Received English Language Volunteer request: {request}")
+        
+        # Convert the request model to a dict for JSON storage
+        form_data = request.dict(exclude={"student_name", "student_id", "program"})
+        
+        # Create the database record
+        db_request = models.EnglishLanguageVolunteerRequest(
+            student_name=request.student_name,
+            student_id=request.student_id,
+            program=request.program,
+            submission_date=datetime.now(),
+            status="pending",
+            form_data=form_data
+        )
+        
+        db.add(db_request)
+        db.commit()
+        db.refresh(db_request)
+        
+        print(f"Created English Language Volunteer request with ID: {db_request.id}")
+        return db_request
+    except Exception as e:
+        db.rollback()
+        print(f"Error creating English Language Volunteer request: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error creating request: {str(e)}")
+
+@router.get("/english-language-volunteer/", response_model=List[schemas.EnglishLanguageVolunteerRequest])
+def get_english_language_volunteer_requests(db: Session = Depends(get_db)):
+    try:
+        requests = db.query(models.EnglishLanguageVolunteerRequest).all()
+        print(f"Retrieved {len(requests)} English Language Volunteer requests")
+        return requests
+    except Exception as e:
+        print(f"Error retrieving English Language Volunteer requests: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error retrieving requests: {str(e)}")
+
+@router.get("/english-language-volunteer/{request_id}", response_model=schemas.EnglishLanguageVolunteerRequest)
+def get_english_language_volunteer_request(request_id: int, db: Session = Depends(get_db)):
+    try:
+        request = db.query(models.EnglishLanguageVolunteerRequest).filter(models.EnglishLanguageVolunteerRequest.id == request_id).first()
+        if request is None:
+            raise HTTPException(status_code=404, detail="Request not found")
+        return request
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error retrieving English Language Volunteer request: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error retrieving request: {str(e)}")
+
+@router.delete("/english-language-volunteer/{request_id}")
+def delete_english_language_volunteer_request(request_id: int, db: Session = Depends(get_db)):
+    try:
+        request = db.query(models.EnglishLanguageVolunteerRequest).filter(models.EnglishLanguageVolunteerRequest.id == request_id).first()
+        if request is None:
+            raise HTTPException(status_code=404, detail="Request not found")
+        
+        db.delete(request)
+        db.commit()
+        
+        print(f"Deleted English Language Volunteer request {request_id}")
+        return {"message": "Request deleted successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        print(f"Error deleting English Language Volunteer request: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error deleting request: {str(e)}")
+
+@router.delete("/english-language-volunteer/")
+def delete_all_english_language_volunteer_requests(db: Session = Depends(get_db)):
+    try:
+        count = db.query(models.EnglishLanguageVolunteerRequest).count()
+        
+        # Delete all records
+        db.query(models.EnglishLanguageVolunteerRequest).delete()
+        db.commit()
+        
+        print(f"Deleted {count} English Language Volunteer requests")
+        return {"message": f"Successfully deleted {count} English Language Volunteer requests"}
+    except Exception as e:
+        db.rollback()
+        print(f"Error deleting English Language Volunteer requests: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error deleting English Language Volunteer requests: {str(e)}")

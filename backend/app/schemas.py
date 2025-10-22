@@ -350,3 +350,60 @@ class DocumentRequest(DocumentRequestBase):
     class Config:
         from_attributes = True
         populate_by_name = True
+
+class EnglishLanguageVolunteerRequestBase(BaseModel):
+    # Required basic fields
+    student_name: str
+    student_id: str
+    program: str
+    
+    # Personal information
+    ucf_id: Optional[str] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    ucf_email: Optional[str] = None
+    academic_level: Optional[str] = None
+    
+    # Course information
+    course_name: Optional[str] = None
+    course_instructor: Optional[str] = None
+    college: Optional[str] = None
+    term: Optional[str] = None
+    
+    # Position preferences
+    position_intensive_english: Optional[bool] = False
+    position_online_english: Optional[bool] = False
+    hours_per_week: Optional[str] = None
+    
+    # Availability (all days and time slots)
+    availability_monday_morning: Optional[bool] = False
+    availability_monday_afternoon: Optional[bool] = False
+    availability_monday_evening: Optional[bool] = False
+    availability_tuesday_morning: Optional[bool] = False
+    availability_tuesday_afternoon: Optional[bool] = False
+    availability_tuesday_evening: Optional[bool] = False
+    availability_wednesday_morning: Optional[bool] = False
+    availability_wednesday_afternoon: Optional[bool] = False
+    availability_wednesday_evening: Optional[bool] = False
+    availability_thursday_morning: Optional[bool] = False
+    availability_thursday_afternoon: Optional[bool] = False
+    availability_thursday_evening: Optional[bool] = False
+    availability_friday_morning: Optional[bool] = False
+    availability_friday_afternoon: Optional[bool] = False
+    availability_friday_evening: Optional[bool] = False
+    
+    # Additional information
+    remarks: Optional[str] = None
+
+class EnglishLanguageVolunteerRequestCreate(EnglishLanguageVolunteerRequestBase):
+    pass
+
+class EnglishLanguageVolunteerRequest(EnglishLanguageVolunteerRequestBase):
+    id: int
+    submission_date: datetime
+    status: str
+    form_data: Optional[Dict[str, Any]] = None
+
+    class Config:
+        from_attributes = True
+        populate_by_name = True
