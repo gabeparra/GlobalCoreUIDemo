@@ -1,34 +1,93 @@
 import { useState } from "react"
 import "@coreui/coreui/dist/css/coreui.min.css"
-import { CForm, CFormLabel, CFormInput, CFormSelect, CFormCheck, CButton, CContainer, CRow, CCol } from "@coreui/react"
+import { CForm, CFormLabel, CFormInput, CFormSelect, CFormCheck, CButton, CContainer, CRow, CCol, CAlert, CSpinner } from "@coreui/react"
 
 export default function VolunteerApplicationForm() {
     const [formData, setFormData] = useState({
-        firstName: "",
-        lastName: "",
-        ucfId: "",
-        email: "",
-        phone: "",
-        academicLevel: "",
-        major: "",
+        firstName: import.meta.env.VITE_PLACEHOLDER_GIVEN_NAME || "",
+        lastName: import.meta.env.VITE_PLACEHOLDER_FAMILY_NAME || "",
+        ucfId: import.meta.env.VITE_PLACEHOLDER_UCF_ID || "",
+        email: import.meta.env.VITE_PLACEHOLDER_STUDENT_EMAIL || "",
+        phone: import.meta.env.VITE_PLACEHOLDER_US_TELEPHONE || "",
+        academicLevel: "graduate",
+        major: "Computer Science",
         minor: "",
-        legalSex: "",
-        speaksForeignLanguage: "",
-        oppositeSexPartner: "",
-        multiplePartners: "",
-        signOffNeeded: "",
-        semesterCommitment: "",
-        agreeToExpectations: false,
-        consentToShareEmail: false,
+        legalSex: import.meta.env.VITE_PLACEHOLDER_LEGAL_SEX || "",
+        speaksForeignLanguage: "yes",
+        oppositeSexPartner: "yes",
+        multiplePartners: "yes",
+        signOffNeeded: "no",
+        semesterCommitment: "yes",
+        agreeToExpectations: true,
+        consentToShareEmail: true,
     })
 
-    const handleSubmit = (e) => {
+    const [submitting, setSubmitting] = useState(false)
+    const [submitted, setSubmitted] = useState(false)
+    const [error, setError] = useState(null)
+
+    const handleSubmit = async (e) => {
         e.preventDefault()
-        console.log("Form submitted:", formData)
+        setSubmitting(true)
+        setError(null)
+
+        try {
+            // Prepare payload for backend
+            const payload = {
+                student_name: `${formData.firstName} ${formData.lastName}`,
+                student_id: formData.ucfId,
+                program: 'Conversation Partner',
+                first_name: formData.firstName,
+                last_name: formData.lastName,
+                ucf_id: formData.ucfId,
+                email: formData.email,
+                phone: formData.phone,
+                academic_level: formData.academicLevel,
+                major: formData.major,
+                minor: formData.minor,
+                legal_sex: formData.legalSex,
+                speaks_foreign_language: formData.speaksForeignLanguage,
+                opposite_sex_partner: formData.oppositeSexPartner,
+                multiple_partners: formData.multiplePartners,
+                sign_off_needed: formData.signOffNeeded,
+                semester_commitment: formData.semesterCommitment,
+                agree_to_expectations: formData.agreeToExpectations,
+                consent_to_share_email: formData.consentToShareEmail
+            }
+
+            console.log("Submitting to conversation-partner endpoint:", payload)
+
+            const response = await fetch('http://localhost:8000/api/conversation-partner/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload),
+            })
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`)
+            }
+
+            const data = await response.json()
+            console.log("Form submitted successfully:", data)
+            setSubmitted(true)
+
+            // Redirect after success
+            setTimeout(() => {
+                window.location.href = '/#/forms/all-requests'
+            }, 2000)
+
+        } catch (err) {
+            console.error("Error submitting form:", err)
+            setError("Failed to submit form. Please try again.")
+        } finally {
+            setSubmitting(false)
+        }
     }
 
     const handleCancel = () => {
-        console.log("Changes cancelled")
+        window.location.href = '/'
     }
 
     return (
@@ -43,6 +102,14 @@ export default function VolunteerApplicationForm() {
 
                 {/* Form Content */}
                 <CContainer className="py-4">
+                    {submitted && (
+                        <CAlert color="success" className="mb-4">
+                            Thank you! Your Conversation Partner application has been submitted successfully.
+                            Redirecting to view all submissions...
+                        </CAlert>
+                    )}
+                    {error && <CAlert color="danger" className="mb-4">{error}</CAlert>}
+
                     <CForm onSubmit={handleSubmit}>
                         {/* Personal Information Section */}
                         <div className="mb-4">
@@ -366,11 +433,11 @@ export default function VolunteerApplicationForm() {
 
                         {/* Action Buttons */}
                         <div className="d-flex gap-2">
-                            <CButton type="submit" color="success" className="text-white">
-                                Submit
+                            <CButton type="submit" color="success" className="text-white" disabled={submitting}>
+                                {submitting ? <><CSpinner size="sm" className="me-2" />Submitting...</> : 'Submit'}
                             </CButton>
-                            <CButton type="button" color="danger" onClick={handleCancel} className="text-white">
-                                Cancel Changes
+                            <CButton type="button" color="danger" onClick={handleCancel} className="text-white" disabled={submitting}>
+                                Cancel
                             </CButton>
                         </div>
                     </CForm>

@@ -5,6 +5,7 @@ const I20RequestForm = React.lazy(() => import('./views/forms/I20RequestForm'))
 const AcademicTrainingForm = React.lazy(() => import('./views/forms/AcademicTrainingForm'))
 const AdministrativeRecordChangeForm = React.lazy(() => import('./views/forms/AdministrativeRecordChangeForm'))
 const ConversationPartnerForm = React.lazy(() => import('./views/forms/ConversationPartner'))
+const OPTRequestForm = React.lazy(() => import('./views/forms/OPTRequestForm'))
 const DocumentRequestForm = React.lazy(() => import('./views/forms/DocumentRequest'))
 const EnglishLanguageProgramVolunteerForm = React.lazy(() => import('./views/forms/EnglishLanguageProgramVolunteerForm'))
 const FloridaStatute101035Form = React.lazy(() => import('./views/forms/FloridaStatute101035Form'))
@@ -21,6 +22,7 @@ const routes = [
   { path: '/forms/academic-training', name: 'Academic Training Request Form', element: AcademicTrainingForm },
   { path: '/forms/administrative-record-change', name: 'Administrative Record Change', element: AdministrativeRecordChangeForm },
   { path: '/forms/conversation-partner', name: 'Conversation Partner Request', element: ConversationPartnerForm },
+  { path: '/forms/opt-request', name: 'OPT Request Form', element: OPTRequestForm },
   { path: '/forms/document-request', name: 'Document Request', element: DocumentRequestForm },
   { path: '/forms/english-language-programs-volunteer', name: 'English Language Programs Volunteer', element: EnglishLanguageProgramVolunteerForm },
   { path: '/forms/florida-statute-101035', name: 'Florida Statute 101035', element: FloridaStatute101035Form },

@@ -16,36 +16,36 @@ import {
 export default function UCFGlobalExitForm() {
     const [formData, setFormData] = useState({
         // Biographical Information
-        ucfId: "",
-        sevisId: "",
+        ucfId: import.meta.env.VITE_PLACEHOLDER_UCF_ID || "",
+        sevisId: import.meta.env.VITE_PLACEHOLDER_SEVIS_ID || "",
         visaType: "",
-        givenName: "",
-        familyName: "",
+        givenName: import.meta.env.VITE_PLACEHOLDER_GIVEN_NAME || "",
+        familyName: import.meta.env.VITE_PLACEHOLDER_FAMILY_NAME || "",
         usStreetAddress: "",
         apartmentNumber: "",
-        city: "",
-        state: "",
+        city: import.meta.env.VITE_PLACEHOLDER_CITY || "",
+        state: import.meta.env.VITE_PLACEHOLDER_STATE || "",
         postalCode: "",
         foreignStreetAddress: "",
-        foreignCity: "",
+        foreignCity: import.meta.env.VITE_PLACEHOLDER_CITY || "",
         foreignPostalCode: "",
         country: "",
-        ucfEmail: "",
-        secondaryEmail: "",
-        usTelephone: "",
+        ucfEmail: import.meta.env.VITE_PLACEHOLDER_STUDENT_EMAIL || "",
+        secondaryEmail: import.meta.env.VITE_PLACEHOLDER_SECONDARY_EMAIL || "",
+        usTelephone: import.meta.env.VITE_PLACEHOLDER_US_TELEPHONE ||  "",
         foreignTelephone: "",
         // Current Academic Information
-        educationLevel: "",
-        employedOnCampus: "",
+        educationLevel: "graduate",
+        employedOnCampus: "yes",
         // Departure Information
-        departureDate: "",
+        departureDate: new Date().toISOString().split('T')[0],
         flightItinerary: null,
         departureReason: "",
         // Submission
         workAuthorizationAcknowledgment: false,
         cptOptAcknowledgment: false,
         financialObligationsAcknowledgment: false,
-        remarks: "",
+        remarks: "I am leaving the United States to return to my home country.",
     })
 
     const handleSubmit = (e) => {

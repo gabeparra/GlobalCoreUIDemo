@@ -39,3 +39,48 @@ class AcademicTrainingRequest(Base):
     
     # Store comments separately
     comments = Column(Text, nullable=True)
+
+class AdministrativeRecordRequest(Base):
+    __tablename__ = "administrative_record_requests"
+
+    id = Column(Integer, primary_key=True, index=True)
+    
+    # Required basic fields
+    student_name = Column(String, index=True)
+    student_id = Column(String, index=True)
+    program = Column(String, default="Administrative Record Change")
+    submission_date = Column(DateTime)
+    status = Column(String, default="pending")
+    
+    # Store all form data as JSON
+    form_data = Column(JSON, nullable=True)
+
+class ConversationPartnerRequest(Base):
+    __tablename__ = "conversation_partner_requests"
+
+    id = Column(Integer, primary_key=True, index=True)
+    
+    # Required basic fields
+    student_name = Column(String, index=True)
+    student_id = Column(String, index=True)
+    program = Column(String, default="Conversation Partner")
+    submission_date = Column(DateTime)
+    status = Column(String, default="pending")
+    
+    # Store all form data as JSON
+    form_data = Column(JSON, nullable=True)
+
+class OPTRequest(Base):
+    __tablename__ = "opt_requests"
+
+    id = Column(Integer, primary_key=True, index=True)
+    
+    # Required basic fields
+    student_name = Column(String, index=True)
+    student_id = Column(String, index=True)
+    program = Column(String, default="OPT Request")
+    submission_date = Column(DateTime)
+    status = Column(String, default="pending")
+    
+    # Store all form data as JSON
+    form_data = Column(JSON, nullable=True)

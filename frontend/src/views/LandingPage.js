@@ -35,6 +35,12 @@ export default function LandingPage() {
             path: '/forms/conversation-partner'
         },
         {
+            title: 'OPT Request Form',
+            description: 'Submit your Optional Practical Training request for F-1 students.',
+            icon: '💼',
+            path: '/forms/opt-request'
+        },
+        {
             title: 'Document Request',
             description: 'Request a document from UCF Global.',
             icon: '📝',

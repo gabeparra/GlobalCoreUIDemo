@@ -17,13 +17,13 @@ import {
 
 export default function OffCampusHousingApplicationForm() {
     const [formData, setFormData] = useState({
-        ucfId: "",
-        firstName: "",
-        lastName: "",
-        dateOfBirth: "",
-        gender: "",
-        emailAddress: "",
-        program: "",
+        ucfId: import.meta.env.VITE_PLACEHOLDER_UCF_ID || "",
+        firstName: import.meta.env.VITE_PLACEHOLDER_GIVEN_NAME || "",
+        lastName: import.meta.env.VITE_PLACEHOLDER_FAMILY_NAME || "",
+        dateOfBirth: import.meta.env.VITE_PLACEHOLDER_DATE_OF_BIRTH || "",
+        gender: "male",
+        emailAddress: import.meta.env.VITE_PLACEHOLDER_STUDENT_EMAIL || "",
+        program: "graduate",
         housingSelections: {
             spring2026: false,
             spring2026Session2: false,

@@ -14,32 +14,32 @@ export default function AcademicTrainingForm() {
         completionType: 'pre',
 
         // Personal Information - Use environment variables or empty strings
-        ucfId: process.env.REACT_APP_PLACEHOLDER_UCF_ID || '',
-        sevisId: process.env.REACT_APP_PLACEHOLDER_SEVIS_ID || '',
-        givenName: process.env.REACT_APP_PLACEHOLDER_GIVEN_NAME || '',
-        familyName: process.env.REACT_APP_PLACEHOLDER_FAMILY_NAME || '',
-        legalSex: process.env.REACT_APP_PLACEHOLDER_LEGAL_SEX || '',
-        dateOfBirth: process.env.REACT_APP_PLACEHOLDER_DATE_OF_BIRTH || '',
-        cityOfBirth: process.env.REACT_APP_PLACEHOLDER_CITY_OF_BIRTH || '',
-        countryOfBirth: process.env.REACT_APP_PLACEHOLDER_COUNTRY_OF_BIRTH || '',
-        countryOfCitizenship: process.env.REACT_APP_PLACEHOLDER_COUNTRY_OF_CITIZENSHIP || '',
-        countryOfLegalResidence: process.env.REACT_APP_PLACEHOLDER_COUNTRY_OF_LEGAL_RESIDENCE || '',
+        ucfId: import.meta.env.VITE_PLACEHOLDER_UCF_ID || '',
+        sevisId: import.meta.env.VITE_PLACEHOLDER_SEVIS_ID || '',
+        givenName: import.meta.env.VITE_PLACEHOLDER_GIVEN_NAME || '',
+        familyName: import.meta.env.VITE_PLACEHOLDER_FAMILY_NAME || '',
+        legalSex: import.meta.env.VITE_PLACEHOLDER_LEGAL_SEX || '',
+        dateOfBirth: import.meta.env.VITE_PLACEHOLDER_DATE_OF_BIRTH || '',
+        cityOfBirth: import.meta.env.VITE_PLACEHOLDER_CITY_OF_BIRTH || '',
+        countryOfBirth: import.meta.env.VITE_PLACEHOLDER_COUNTRY_OF_BIRTH || '',
+        countryOfCitizenship: import.meta.env.VITE_PLACEHOLDER_COUNTRY_OF_CITIZENSHIP || '',
+        countryOfLegalResidence: import.meta.env.VITE_PLACEHOLDER_COUNTRY_OF_LEGAL_RESIDENCE || '',
 
         // U.S. Address
         hasUsAddress: true,
-        streetAddress: process.env.REACT_APP_PLACEHOLDER_STREET_ADDRESS || '',
-        city: process.env.REACT_APP_PLACEHOLDER_CITY || '',
-        state: process.env.REACT_APP_PLACEHOLDER_STATE || '',
-        country: process.env.REACT_APP_PLACEHOLDER_COUNTRY || '',
+        streetAddress: import.meta.env.VITE_PLACEHOLDER_STREET_ADDRESS || '',
+        city: import.meta.env.VITE_PLACEHOLDER_CITY || '',
+        state: import.meta.env.VITE_PLACEHOLDER_STATE || '',
+        country: import.meta.env.VITE_PLACEHOLDER_COUNTRY || '',
 
         // Contact Information
-        usTelephone: process.env.REACT_APP_PLACEHOLDER_US_TELEPHONE || '',
+        usTelephone: import.meta.env.VITE_PLACEHOLDER_US_TELEPHONE || '',
         nonUsTelephone: '',
 
         // Questionnaire
         enrolledFullTime: true,
-        academicTrainingStartDate: process.env.REACT_APP_PLACEHOLDER_TRAINING_START_DATE || '',
-        academicTrainingEndDate: process.env.REACT_APP_PLACEHOLDER_TRAINING_END_DATE || '',
+        academicTrainingStartDate: import.meta.env.VITE_PLACEHOLDER_TRAINING_START_DATE || '',
+        academicTrainingEndDate: import.meta.env.VITE_PLACEHOLDER_TRAINING_END_DATE || '',
         employedOnCampus: false,
         previouslyAuthorized: false,
 
@@ -55,7 +55,7 @@ export default function AcademicTrainingForm() {
         understandConsultAdvisor: true,
 
         // Submission
-        comments: process.env.REACT_APP_PLACEHOLDER_COMMENTS || '',
+        comments: import.meta.env.VITE_PLACEHOLDER_COMMENTS || '',
         certifyInformation: true
     })
 

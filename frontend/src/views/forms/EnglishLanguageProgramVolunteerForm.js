@@ -15,20 +15,20 @@ import {
 
 export default function EnglishLanguageProgramsVolunteerForm() {
     const [formData, setFormData] = useState({
-        ucfId: "",
-        firstName: "",
-        lastName: "",
-        ucfEmail: "",
+        ucfId: import.meta.env.VITE_PLACEHOLDER_UCF_ID || "",
+        firstName: import.meta.env.VITE_PLACEHOLDER_GIVEN_NAME || "",
+        lastName: import.meta.env.VITE_PLACEHOLDER_FAMILY_NAME || "",
+        ucfEmail: import.meta.env.VITE_PLACEHOLDER_STUDENT_EMAIL || "",
         academicLevel: "",
-        courseName: "",
-        courseInstructor: "",
-        college: "",
-        term: "",
+        courseName: "English 101",
+        courseInstructor: "Dr. John Doe",
+        college: "College of Arts and Humanities",
+        term: "Fall 2025",
         positions: {
             intensiveEnglish: false,
             onlineEnglish: false,
         },
-        hoursPerWeek: "",
+        hoursPerWeek: "1-2 hours",
         availability: {
             monday: { morning: false, afternoon: false, evening: false },
             tuesday: { morning: false, afternoon: false, evening: false },
@@ -36,7 +36,7 @@ export default function EnglishLanguageProgramsVolunteerForm() {
             thursday: { morning: false, afternoon: false, evening: false },
             friday: { morning: false, afternoon: false, evening: false },
         },
-        remarks: "",
+        remarks: "I am available to help international students improve their English language skills.",
     })
 
     const handleSubmit = (e) => {

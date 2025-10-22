@@ -42,6 +42,12 @@ const _nav = [
       },
       {
         component: CNavItem,
+        name: 'OPT Request',
+        to: '/forms/opt-request',
+        icon: <CIcon icon={cilPencil} customClassName="nav-icon" />,
+      },
+      {
+        component: CNavItem,
         name: 'Document Request',
         to: '/forms/document-request',
         icon: <CIcon icon={cilPencil} customClassName="nav-icon" />,

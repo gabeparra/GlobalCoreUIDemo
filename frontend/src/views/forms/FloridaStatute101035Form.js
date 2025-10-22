@@ -17,18 +17,18 @@ import {
 
 export default function FloridaStatute101035Form() {
     const [formData, setFormData] = useState({
-        ucfId: "",
-        firstName: "",
-        lastName: "",
-        dateOfBirth: "",
-        telephoneNumber: "",
-        emailAddress: "",
-        sevisNumber: "",
-        college: "",
-        department: "",
-        position: "",
-        hasPassport: "",
-        hasDS160: "",
+        ucfId: import.meta.env.VITE_PLACEHOLDER_UCF_ID || "",
+        firstName: import.meta.env.VITE_PLACEHOLDER_GIVEN_NAME || "",
+        lastName: import.meta.env.VITE_PLACEHOLDER_FAMILY_NAME || "",
+        dateOfBirth: import.meta.env.VITE_PLACEHOLDER_DATE_OF_BIRTH || "",
+        telephoneNumber: import.meta.env.VITE_PLACEHOLDER_US_TELEPHONE || "",
+        emailAddress: import.meta.env.VITE_PLACEHOLDER_STUDENT_EMAIL || "",
+        sevisNumber: import.meta.env.VITE_PLACEHOLDER_SEVIS_ID || "",
+        college: "College of Arts and Humanities",
+        department: "Department of English",
+        position: "Professor",
+        hasPassport: "yes",
+        hasDS160: "yes",
         passportDocument: null,
     })
 

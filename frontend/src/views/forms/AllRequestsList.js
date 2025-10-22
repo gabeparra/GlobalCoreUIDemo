@@ -23,10 +23,13 @@ export default function AllRequestsList() {
         try {
             setLoading(true)
 
-            // Fetch both I-20 and Academic Training requests
-            const [i20Response, academicResponse] = await Promise.all([
+            // Fetch all request types
+            const [i20Response, academicResponse, administrativeResponse, conversationResponse, optResponse] = await Promise.all([
                 fetch('http://localhost:8000/api/i20-requests/'),
-                fetch('http://localhost:8000/api/academic-training/')
+                fetch('http://localhost:8000/api/academic-training/'),
+                fetch('http://localhost:8000/api/administrative-record/'),
+                fetch('http://localhost:8000/api/conversation-partner/'),
+                fetch('http://localhost:8000/api/opt-requests/')
             ])
 
             if (!i20Response.ok) {
@@ -37,13 +40,31 @@ export default function AllRequestsList() {
                 throw new Error(`Academic Training HTTP error! Status: ${academicResponse.status}`)
             }
 
+            if (!administrativeResponse.ok) {
+                throw new Error(`Administrative Record HTTP error! Status: ${administrativeResponse.status}`)
+            }
+
+            if (!conversationResponse.ok) {
+                throw new Error(`Conversation Partner HTTP error! Status: ${conversationResponse.status}`)
+            }
+
+            if (!optResponse.ok) {
+                throw new Error(`OPT Request HTTP error! Status: ${optResponse.status}`)
+            }
+
             const i20Data = await i20Response.json()
             const academicData = await academicResponse.json()
+            const administrativeData = await administrativeResponse.json()
+            const conversationData = await conversationResponse.json()
+            const optData = await optResponse.json()
 
-            // Combine both datasets
-            const allRequests = [...i20Data, ...academicData]
+            // Combine all datasets
+            const allRequests = [...i20Data, ...academicData, ...administrativeData, ...conversationData, ...optData]
             console.log('Fetched I-20 requests:', i20Data.length)
             console.log('Fetched Academic Training requests:', academicData.length)
+            console.log('Fetched Administrative Record requests:', administrativeData.length)
+            console.log('Fetched Conversation Partner requests:', conversationData.length)
+            console.log('Fetched OPT requests:', optData.length)
             console.log('Total requests:', allRequests.length)
 
             setRequests(allRequests)
@@ -62,9 +83,18 @@ export default function AllRequestsList() {
             setIsDeleting(true)
             setError(null)
 
-            const endpoint = program === 'Academic Training'
-                ? `http://localhost:8000/api/academic-training/${requestId}`
-                : `http://localhost:8000/api/i20-requests/${requestId}`
+            let endpoint;
+            if (program === 'Academic Training') {
+                endpoint = `http://localhost:8000/api/academic-training/${requestId}`
+            } else if (program === 'Administrative Record Change') {
+                endpoint = `http://localhost:8000/api/administrative-record/${requestId}`
+            } else if (program === 'Conversation Partner') {
+                endpoint = `http://localhost:8000/api/conversation-partner/${requestId}`
+            } else if (program === 'OPT Request') {
+                endpoint = `http://localhost:8000/api/opt-requests/${requestId}`
+            } else {
+                endpoint = `http://localhost:8000/api/i20-requests/${requestId}`
+            }
 
             const response = await fetch(endpoint, {
                 method: 'DELETE',
@@ -107,9 +137,18 @@ export default function AllRequestsList() {
             // Delete each selected request
             const deletePromises = selectedRequests.map(reqId => {
                 const request = requests.find(r => r.id === reqId)
-                const endpoint = request.program === 'Academic Training'
-                    ? `http://localhost:8000/api/academic-training/${reqId}`
-                    : `http://localhost:8000/api/i20-requests/${reqId}`
+                let endpoint;
+                if (request.program === 'Academic Training') {
+                    endpoint = `http://localhost:8000/api/academic-training/${reqId}`
+                } else if (request.program === 'Administrative Record Change') {
+                    endpoint = `http://localhost:8000/api/administrative-record/${reqId}`
+                } else if (request.program === 'Conversation Partner') {
+                    endpoint = `http://localhost:8000/api/conversation-partner/${reqId}`
+                } else if (request.program === 'OPT Request') {
+                    endpoint = `http://localhost:8000/api/opt-requests/${reqId}`
+                } else {
+                    endpoint = `http://localhost:8000/api/i20-requests/${reqId}`
+                }
 
                 return fetch(endpoint, { method: 'DELETE' })
             })
@@ -150,16 +189,22 @@ export default function AllRequestsList() {
             setError(null)
             setDeleteSuccess(false)
 
-            // Delete from both endpoints
-            const [i20Response, academicResponse] = await Promise.all([
+            // Delete from all endpoints
+            const [i20Response, academicResponse, administrativeResponse, conversationResponse, optResponse] = await Promise.all([
                 fetch('http://localhost:8000/api/i20-requests/', { method: 'DELETE' }),
-                fetch('http://localhost:8000/api/academic-training/', { method: 'DELETE' })
+                fetch('http://localhost:8000/api/academic-training/', { method: 'DELETE' }),
+                fetch('http://localhost:8000/api/administrative-record/', { method: 'DELETE' }),
+                fetch('http://localhost:8000/api/conversation-partner/', { method: 'DELETE' }),
+                fetch('http://localhost:8000/api/opt-requests/', { method: 'DELETE' })
             ])
 
-            if (!i20Response.ok || !academicResponse.ok) {
+            if (!i20Response.ok || !academicResponse.ok || !administrativeResponse.ok || !conversationResponse.ok || !optResponse.ok) {
                 const i20Error = i20Response.ok ? '' : await i20Response.text()
                 const academicError = academicResponse.ok ? '' : await academicResponse.text()
-                throw new Error(`Failed to delete requests: ${i20Error} ${academicError}`)
+                const adminError = administrativeResponse.ok ? '' : await administrativeResponse.text()
+                const conversationError = conversationResponse.ok ? '' : await conversationResponse.text()
+                const optError = optResponse.ok ? '' : await optResponse.text()
+                throw new Error(`Failed to delete requests: ${i20Error} ${academicError} ${adminError} ${conversationError} ${optError}`)
             }
 
             console.log('All requests deleted successfully')
@@ -240,18 +285,38 @@ export default function AllRequestsList() {
     }
 
     // Filter requests by type
-    const i20Requests = requests.filter(req => req.program !== 'Academic Training' && req.program !== 'Administrative Record Change');
+    const i20Requests = requests.filter(req =>
+        req.program !== 'Academic Training' &&
+        req.program !== 'Administrative Record Change' &&
+        req.program !== 'Conversation Partner' &&
+        req.program !== 'OPT Request'
+    );
     const academicTrainingRequests = requests.filter(req => req.program === 'Academic Training');
     const administrativeRecordRequests = requests.filter(req => req.program === 'Administrative Record Change');
+    const conversationPartnerRequests = requests.filter(req => req.program === 'Conversation Partner');
+    const optRequests = requests.filter(req => req.program === 'OPT Request');
 
     // Get request type
     const getRequestType = (request) => {
         if (request.program === 'Academic Training') {
-            return request.form_data?.completionType === 'pre' ? 'Pre-Completion' : 'Post-Completion';
+            // Check both camelCase and snake_case for compatibility
+            const completionType = request.form_data?.completion_type || request.form_data?.completionType;
+            return completionType === 'pre' ? 'Academic Training: Pre-Completion' : 'Academic Training: Post-Completion';
         } else if (request.program === 'Administrative Record Change') {
-            return request.form_data?.actionRequested?.length > 0
-                ? `Administrative Record: ${request.form_data.actionRequested[0]}`
-                : 'Administrative Record Change';
+            // Display the first action requested, or show all if multiple
+            const actions = request.form_data?.actionRequested || request.form_data?.action_requested;
+            if (actions && actions.length > 0) {
+                return actions.length === 1
+                    ? `Admin Record: ${actions[0]}`
+                    : `Admin Record: ${actions.join(', ')}`;
+            }
+            return 'Administrative Record Change';
+        } else if (request.program === 'Conversation Partner') {
+            const academicLevel = request.form_data?.academic_level || 'N/A';
+            return `Conversation Partner: ${academicLevel}`;
+        } else if (request.program === 'OPT Request') {
+            const academicLevel = request.form_data?.academic_level || 'N/A';
+            return `OPT Request: ${academicLevel}`;
         } else {
             return request.program;
         }
@@ -336,6 +401,24 @@ export default function AllRequestsList() {
                                             role="tab"
                                         >
                                             Administrative Record ({administrativeRecordRequests.length})
+                                        </CNavLink>
+                                    </CNavItem>
+                                    <CNavItem>
+                                        <CNavLink
+                                            active={activeTab === 5}
+                                            onClick={() => setActiveTab(5)}
+                                            role="tab"
+                                        >
+                                            Conversation Partner ({conversationPartnerRequests.length})
+                                        </CNavLink>
+                                    </CNavItem>
+                                    <CNavItem>
+                                        <CNavLink
+                                            active={activeTab === 6}
+                                            onClick={() => setActiveTab(6)}
+                                            role="tab"
+                                        >
+                                            OPT Requests ({optRequests.length})
                                         </CNavLink>
                                     </CNavItem>
                                 </CNav>
@@ -480,7 +563,7 @@ export default function AllRequestsList() {
                                                         <CTableDataCell>{request.student_name}</CTableDataCell>
                                                         <CTableDataCell>{request.student_id}</CTableDataCell>
                                                         <CTableDataCell>
-                                                            {request.form_data?.completion_type === 'pre' ? 'Pre-Completion' : 'Post-Completion'}
+                                                            {(request.form_data?.completion_type || request.form_data?.completionType) === 'pre' ? 'Pre-Completion' : 'Post-Completion'}
                                                         </CTableDataCell>
                                                         <CTableDataCell>{formatDate(request.submission_date)}</CTableDataCell>
                                                         <CTableDataCell>
@@ -556,6 +639,146 @@ export default function AllRequestsList() {
                                             </CTableBody>
                                         </CTable>
                                     </CTabPane>
+
+                                    <CTabPane role="tabpanel" visible={activeTab === 5}>
+                                        <CTable hover responsive>
+                                            <CTableHead>
+                                                <CTableRow>
+                                                    <CTableHeaderCell scope="col">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={selectedRequests.length === conversationPartnerRequests.length && conversationPartnerRequests.length > 0}
+                                                            onChange={() => toggleSelectAll(conversationPartnerRequests)}
+                                                        />
+                                                    </CTableHeaderCell>
+                                                    <CTableHeaderCell scope="col">#</CTableHeaderCell>
+                                                    <CTableHeaderCell scope="col">Student Name</CTableHeaderCell>
+                                                    <CTableHeaderCell scope="col">Student ID</CTableHeaderCell>
+                                                    <CTableHeaderCell scope="col">Academic Level</CTableHeaderCell>
+                                                    <CTableHeaderCell scope="col">Major</CTableHeaderCell>
+                                                    <CTableHeaderCell scope="col">Submission Date</CTableHeaderCell>
+                                                    <CTableHeaderCell scope="col">Status</CTableHeaderCell>
+                                                    <CTableHeaderCell scope="col">Actions</CTableHeaderCell>
+                                                </CTableRow>
+                                            </CTableHead>
+                                            <CTableBody>
+                                                {conversationPartnerRequests.map((request) => (
+                                                    <CTableRow key={request.id}>
+                                                        <CTableDataCell>
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={selectedRequests.includes(request.id)}
+                                                                onChange={() => toggleSelection(request.id)}
+                                                            />
+                                                        </CTableDataCell>
+                                                        <CTableHeaderCell scope="row">{request.id}</CTableHeaderCell>
+                                                        <CTableDataCell>{request.student_name}</CTableDataCell>
+                                                        <CTableDataCell>{request.student_id}</CTableDataCell>
+                                                        <CTableDataCell>
+                                                            {request.form_data?.academic_level || 'N/A'}
+                                                        </CTableDataCell>
+                                                        <CTableDataCell>
+                                                            {request.form_data?.major || 'N/A'}
+                                                        </CTableDataCell>
+                                                        <CTableDataCell>{formatDate(request.submission_date)}</CTableDataCell>
+                                                        <CTableDataCell>
+                                                            <span className={`badge bg-${request.status === 'pending' ? 'warning' : 'success'}`}>
+                                                                {request.status}
+                                                            </span>
+                                                        </CTableDataCell>
+                                                        <CTableDataCell>
+                                                            <CButton
+                                                                size="sm"
+                                                                color="danger"
+                                                                className="me-2"
+                                                                onClick={() => deleteRequest(request.id, request.program)}
+                                                                disabled={isDeleting}
+                                                            >
+                                                                Delete
+                                                            </CButton>
+                                                            <CButton
+                                                                size="sm"
+                                                                color="primary"
+                                                                onClick={() => viewRequest(request)}
+                                                            >
+                                                                View
+                                                            </CButton>
+                                                        </CTableDataCell>
+                                                    </CTableRow>
+                                                ))}
+                                            </CTableBody>
+                                        </CTable>
+                                    </CTabPane>
+
+                                    <CTabPane role="tabpanel" visible={activeTab === 6}>
+                                        <CTable hover responsive>
+                                            <CTableHead>
+                                                <CTableRow>
+                                                    <CTableHeaderCell scope="col">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={selectedRequests.length === optRequests.length && optRequests.length > 0}
+                                                            onChange={() => toggleSelectAll(optRequests)}
+                                                        />
+                                                    </CTableHeaderCell>
+                                                    <CTableHeaderCell scope="col">#</CTableHeaderCell>
+                                                    <CTableHeaderCell scope="col">Student Name</CTableHeaderCell>
+                                                    <CTableHeaderCell scope="col">Student ID</CTableHeaderCell>
+                                                    <CTableHeaderCell scope="col">Academic Level</CTableHeaderCell>
+                                                    <CTableHeaderCell scope="col">Academic Program</CTableHeaderCell>
+                                                    <CTableHeaderCell scope="col">Submission Date</CTableHeaderCell>
+                                                    <CTableHeaderCell scope="col">Status</CTableHeaderCell>
+                                                    <CTableHeaderCell scope="col">Actions</CTableHeaderCell>
+                                                </CTableRow>
+                                            </CTableHead>
+                                            <CTableBody>
+                                                {optRequests.map((request) => (
+                                                    <CTableRow key={request.id}>
+                                                        <CTableDataCell>
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={selectedRequests.includes(request.id)}
+                                                                onChange={() => toggleSelection(request.id)}
+                                                            />
+                                                        </CTableDataCell>
+                                                        <CTableHeaderCell scope="row">{request.id}</CTableHeaderCell>
+                                                        <CTableDataCell>{request.student_name}</CTableDataCell>
+                                                        <CTableDataCell>{request.student_id}</CTableDataCell>
+                                                        <CTableDataCell>
+                                                            {request.form_data?.academic_level || 'N/A'}
+                                                        </CTableDataCell>
+                                                        <CTableDataCell>
+                                                            {request.form_data?.academic_program || 'N/A'}
+                                                        </CTableDataCell>
+                                                        <CTableDataCell>{formatDate(request.submission_date)}</CTableDataCell>
+                                                        <CTableDataCell>
+                                                            <span className={`badge bg-${request.status === 'pending' ? 'warning' : 'success'}`}>
+                                                                {request.status}
+                                                            </span>
+                                                        </CTableDataCell>
+                                                        <CTableDataCell>
+                                                            <CButton
+                                                                size="sm"
+                                                                color="danger"
+                                                                className="me-2"
+                                                                onClick={() => deleteRequest(request.id, request.program)}
+                                                                disabled={isDeleting}
+                                                            >
+                                                                Delete
+                                                            </CButton>
+                                                            <CButton
+                                                                size="sm"
+                                                                color="primary"
+                                                                onClick={() => viewRequest(request)}
+                                                            >
+                                                                View
+                                                            </CButton>
+                                                        </CTableDataCell>
+                                                    </CTableRow>
+                                                ))}
+                                            </CTableBody>
+                                        </CTable>
+                                    </CTabPane>
                                 </CTabContent>
 
                                 <h4 className="mt-4">Detailed Request Data</h4>
@@ -567,7 +790,11 @@ export default function AllRequestsList() {
                                                     ? 'Academic Training'
                                                     : request.program === 'Administrative Record Change'
                                                         ? 'Administrative Record'
-                                                        : 'I-20'} Request #{request.id} - {request.student_name}
+                                                        : request.program === 'Conversation Partner'
+                                                            ? 'Conversation Partner'
+                                                            : request.program === 'OPT Request'
+                                                                ? 'OPT Request'
+                                                                : 'I-20'} Request #{request.id} - {request.student_name}
                                             </CAccordionHeader>
                                             <CAccordionBody>
                                                 <h5>Basic Information</h5>
@@ -639,7 +866,11 @@ export default function AllRequestsList() {
                                     ? 'Academic Training Request'
                                     : selectedRequest.program === 'Administrative Record Change'
                                         ? 'Administrative Record Change'
-                                        : 'I-20 Request'} #{selectedRequest.id}
+                                        : selectedRequest.program === 'Conversation Partner'
+                                            ? 'Conversation Partner Application'
+                                            : selectedRequest.program === 'OPT Request'
+                                                ? 'OPT Request Application'
+                                                : 'I-20 Request'} #{selectedRequest.id}
                             </>
                         )}
                     </CModalTitle>

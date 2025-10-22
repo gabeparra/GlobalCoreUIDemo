@@ -18,18 +18,18 @@ import {
 
 export default function LeaveRequestForm() {
     const [formData, setFormData] = useState({
-        employeeId: "",
-        firstName: "",
-        lastName: "",
+        employeeId: import.meta.env.VITE_PLACEHOLDER_UCF_ID || "",
+        firstName: import.meta.env.VITE_PLACEHOLDER_GIVEN_NAME || "",
+        lastName: import.meta.env.VITE_PLACEHOLDER_FAMILY_NAME || "",
         leaveType: "",
         documentation: null,
-        fromDate: "",
-        fromTime: "",
-        toDate: "",
-        toTime: "",
+        fromDate: new Date().toISOString().split('T')[0],
+        fromTime: new Date().toISOString().split('T')[1],
+        toDate: new Date().toISOString().split('T')[0],
+        toTime: new Date().toISOString().split('T')[1],
         hoursRequested: "",
-        reason: "",
-        courseName: "",
+        reason: "I am requesting leave for personal reasons.",
+        courseName: "English 101",
         classes: [],
     })
 

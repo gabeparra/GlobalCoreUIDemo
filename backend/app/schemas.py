@@ -163,3 +163,155 @@ class AcademicTrainingRequest(AcademicTrainingRequestBase):
     class Config:
         from_attributes = True
         populate_by_name = True
+
+class AdministrativeRecordRequestBase(BaseModel):
+    # Required basic fields
+    student_name: str
+    student_id: str
+    program: str = "Administrative Record Change"
+    
+    # Student Information
+    ucf_id: Optional[str] = None
+    sevis_id: Optional[str] = None
+    date: Optional[str] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    student_email: Optional[str] = None
+    preferred_phone: Optional[str] = None
+    current_program: Optional[str] = None
+    
+    # Visa Information
+    visa_type: Optional[str] = None
+    visa_status: Optional[str] = None
+    visa_info_correct: Optional[str] = None
+    
+    # Action Requested
+    action_requested: Optional[List[str]] = None
+    
+    # Certification
+    certification_checked: Optional[bool] = False
+
+class AdministrativeRecordRequestCreate(AdministrativeRecordRequestBase):
+    pass
+
+class AdministrativeRecordRequest(AdministrativeRecordRequestBase):
+    id: int
+    submission_date: datetime
+    status: str
+    form_data: Optional[Dict[str, Any]] = None
+
+    class Config:
+        from_attributes = True
+        populate_by_name = True
+
+class ConversationPartnerRequestBase(BaseModel):
+    # Required basic fields
+    student_name: str
+    student_id: str
+    program: str = "Conversation Partner"
+    
+    # Personal Information
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    ucf_id: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    
+    # Academic Information
+    academic_level: Optional[str] = None
+    major: Optional[str] = None
+    minor: Optional[str] = None
+    legal_sex: Optional[str] = None
+    
+    # Partner Preferences
+    speaks_foreign_language: Optional[str] = None
+    opposite_sex_partner: Optional[str] = None
+    multiple_partners: Optional[str] = None
+    sign_off_needed: Optional[str] = None
+    semester_commitment: Optional[str] = None
+    
+    # Consent
+    agree_to_expectations: Optional[bool] = False
+    consent_to_share_email: Optional[bool] = False
+
+class ConversationPartnerRequestCreate(ConversationPartnerRequestBase):
+    pass
+
+class ConversationPartnerRequest(ConversationPartnerRequestBase):
+    id: int
+    submission_date: datetime
+    status: str
+    form_data: Optional[Dict[str, Any]] = None
+
+    class Config:
+        from_attributes = True
+        populate_by_name = True
+
+class OPTRequestBase(BaseModel):
+    # Required basic fields
+    student_name: str
+    student_id: str
+    program: str = "OPT Request"
+    
+    # Contact Information
+    ucf_id: Optional[str] = None
+    given_name: Optional[str] = None
+    family_name: Optional[str] = None
+    date_of_birth: Optional[str] = None
+    legal_sex: Optional[str] = None
+    country_of_citizenship: Optional[str] = None
+    academic_level: Optional[str] = None
+    academic_program: Optional[str] = None
+    
+    # Address Information
+    address: Optional[str] = None
+    address2: Optional[str] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
+    postal_code: Optional[str] = None
+    
+    # Contact Details
+    ucf_email_address: Optional[str] = None
+    secondary_email_address: Optional[str] = None
+    telephone_number: Optional[str] = None
+    information_correct: Optional[bool] = False
+    
+    # Questionnaire
+    full_time_student: Optional[str] = None
+    intent_to_graduate: Optional[str] = None
+    semester_of_graduation: Optional[str] = None
+    desired_opt_start_date: Optional[str] = None
+    desired_opt_end_date: Optional[str] = None
+    currently_employed_on_campus: Optional[str] = None
+    previous_opt_authorization: Optional[str] = None
+    
+    # Document Uploads (file paths)
+    photo2x2: Optional[str] = None
+    passport_biographical: Optional[str] = None
+    f1_visa_or_uscis_notice: Optional[str] = None
+    i94: Optional[str] = None
+    form_i765: Optional[str] = None
+    form_g1145: Optional[str] = None
+    previous_i20s: Optional[str] = None
+    previous_ead: Optional[str] = None
+    
+    # Statements of Agreement
+    opt_workshop_completed: Optional[bool] = False
+    opt_request_timeline: Optional[bool] = False
+    ead_card_copy: Optional[bool] = False
+    report_changes: Optional[bool] = False
+    unemployment_limit: Optional[bool] = False
+    employment_start_date: Optional[bool] = False
+
+class OPTRequestCreate(OPTRequestBase):
+    pass
+
+class OPTRequest(OPTRequestBase):
+    id: int
+    submission_date: datetime
+    status: str
+    form_data: Optional[Dict[str, Any]] = None
+
+    class Config:
+        from_attributes = True
+        populate_by_name = True

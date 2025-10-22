@@ -26,25 +26,25 @@ export default function AdministrativeRecordChangeForm() {
      */
     const [form, setForm] = useState({
         // Student Information
-        ucfId: '',
-        sevisId: '',
-        date: '',
-        firstName: '',
-        lastName: '',
-        studentEmail: '',
-        preferredPhone: '',
-        currentProgram: '',
+        ucfId: import.meta.env.VITE_PLACEHOLDER_UCF_ID || '',
+        sevisId: import.meta.env.VITE_PLACEHOLDER_SEVIS_ID || '',
+        date: new Date().toISOString().split('T')[0], // Today's date
+        firstName: import.meta.env.VITE_PLACEHOLDER_GIVEN_NAME || '',
+        lastName: import.meta.env.VITE_PLACEHOLDER_FAMILY_NAME || '',
+        studentEmail: import.meta.env.VITE_PLACEHOLDER_STUDENT_EMAIL || '',
+        preferredPhone: import.meta.env.VITE_PLACEHOLDER_US_TELEPHONE || '',
+        currentProgram: 'Graduate',
 
         // Visa Information
-        visaType: 'ASL',         // Default visa type
-        visaStatus: 'Applied For', // Default visa status
-        visaInfoCorrect: '',
+        visaType: 'F-1',         // Default visa type
+        visaStatus: 'Active', // Default visa status
+        visaInfoCorrect: 'Yes',
 
         // Action Requested - stores array of selected actions
-        actionRequested: [],
+        actionRequested: ['Late Drop'],
 
         // Form submission state
-        certificationChecked: false
+        certificationChecked: true
     })
 
     /**
@@ -158,22 +158,34 @@ export default function AdministrativeRecordChangeForm() {
             await new Promise(resolve => setTimeout(resolve, 1500))
 
             // Prepare form data in the format expected by the backend API
-            const formData = {
+            const payload = {
                 student_name: `${form.firstName} ${form.lastName}`,
                 student_id: form.ucfId,
                 program: 'Administrative Record Change',
-                submission_date: new Date().toISOString(),
-                status: 'pending',
-                form_data: form // Include all form fields for detailed record
+                ucf_id: form.ucfId,
+                sevis_id: form.sevisId,
+                date: form.date,
+                first_name: form.firstName,
+                last_name: form.lastName,
+                student_email: form.studentEmail,
+                preferred_phone: form.preferredPhone,
+                current_program: form.currentProgram,
+                visa_type: form.visaType,
+                visa_status: form.visaStatus,
+                visa_info_correct: form.visaInfoCorrect,
+                action_requested: form.actionRequested,
+                certification_checked: form.certificationChecked
             }
 
+            console.log('Submitting to administrative-record endpoint:', payload)
+
             // Send form data to backend API
-            const response = await fetch('http://localhost:8000/api/i20-requests/', {
+            const response = await fetch('http://localhost:8000/api/administrative-record/', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(formData),
+                body: JSON.stringify(payload),
             })
 
             // Handle non-successful HTTP responses
