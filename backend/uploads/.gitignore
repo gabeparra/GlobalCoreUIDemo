@@ -1,0 +1,11 @@
+# Ignore all uploaded files
+*
+
+# But keep the directory structure
+!.gitignore
+!academic_training/
+!academic_training/offer_letters/
+!academic_training/offer_letters/.gitkeep
+!academic_training/training_authorizations/
+!academic_training/training_authorizations/.gitkeep
+
