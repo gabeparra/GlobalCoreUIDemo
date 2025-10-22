@@ -72,7 +72,7 @@ export default function LandingPage() {
         },
         {
             title: 'Off Campus Housing Application',
-            description: 'Apply for off-campus housing at The Verge with UCF Global.',
+            description: 'Apply for off-campus housing at The Verge. $250 processing fee required.',
             icon: '🏠',
             path: '/forms/off-campus-housing'
         },

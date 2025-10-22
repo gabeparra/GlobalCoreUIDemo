@@ -114,3 +114,18 @@ class EnglishLanguageVolunteerRequest(Base):
     
     # Store all form data as JSON
     form_data = Column(JSON, nullable=True)
+
+class OffCampusHousingRequest(Base):
+    __tablename__ = "off_campus_housing_requests"
+
+    id = Column(Integer, primary_key=True, index=True)
+    
+    # Required basic fields
+    student_name = Column(String, index=True)
+    student_id = Column(String, index=True)
+    program = Column(String, default="Off Campus Housing Application")
+    submission_date = Column(DateTime)
+    status = Column(String, default="pending")
+    
+    # Store all form data as JSON
+    form_data = Column(JSON, nullable=True)

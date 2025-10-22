@@ -407,3 +407,43 @@ class EnglishLanguageVolunteerRequest(EnglishLanguageVolunteerRequestBase):
     class Config:
         from_attributes = True
         populate_by_name = True
+
+class OffCampusHousingRequestBase(BaseModel):
+    # Required basic fields
+    student_name: str
+    student_id: str
+    program: str
+    
+    # Personal information
+    ucf_id: Optional[str] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    date_of_birth: Optional[str] = None
+    gender: Optional[str] = None
+    email_address: Optional[str] = None
+    program_type: Optional[str] = None
+    
+    # Housing selections
+    housing_spring_2026: Optional[bool] = False
+    housing_spring_2026_session_2: Optional[bool] = False
+    housing_summer_2026: Optional[bool] = False
+    housing_summer_2026_session_2: Optional[bool] = False
+    housing_fall_2025: Optional[bool] = False
+    
+    # Payment information
+    acknowledgement: Optional[bool] = False
+    amount_due: Optional[float] = 250.00
+    payment_status: Optional[str] = "PENDING"
+
+class OffCampusHousingRequestCreate(OffCampusHousingRequestBase):
+    pass
+
+class OffCampusHousingRequest(OffCampusHousingRequestBase):
+    id: int
+    submission_date: datetime
+    status: str
+    form_data: Optional[Dict[str, Any]] = None
+
+    class Config:
+        from_attributes = True
+        populate_by_name = True

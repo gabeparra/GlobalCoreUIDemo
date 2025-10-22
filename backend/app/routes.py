@@ -846,3 +846,91 @@ def delete_all_english_language_volunteer_requests(db: Session = Depends(get_db)
         db.rollback()
         print(f"Error deleting English Language Volunteer requests: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error deleting English Language Volunteer requests: {str(e)}")
+
+# Off Campus Housing Request endpoints
+@router.post("/off-campus-housing/", response_model=schemas.OffCampusHousingRequest)
+def create_off_campus_housing_request(request: schemas.OffCampusHousingRequestCreate, db: Session = Depends(get_db)):
+    try:
+        print(f"Received Off Campus Housing request: {request}")
+        
+        # Convert the request model to a dict for JSON storage
+        form_data = request.dict(exclude={"student_name", "student_id", "program"})
+        
+        # Create the database record
+        db_request = models.OffCampusHousingRequest(
+            student_name=request.student_name,
+            student_id=request.student_id,
+            program=request.program,
+            submission_date=datetime.now(),
+            status="pending",
+            form_data=form_data
+        )
+        
+        db.add(db_request)
+        db.commit()
+        db.refresh(db_request)
+        
+        print(f"Created Off Campus Housing request with ID: {db_request.id}")
+        return db_request
+    except Exception as e:
+        db.rollback()
+        print(f"Error creating Off Campus Housing request: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error creating request: {str(e)}")
+
+@router.get("/off-campus-housing/", response_model=List[schemas.OffCampusHousingRequest])
+def get_off_campus_housing_requests(db: Session = Depends(get_db)):
+    try:
+        requests = db.query(models.OffCampusHousingRequest).all()
+        print(f"Retrieved {len(requests)} Off Campus Housing requests")
+        return requests
+    except Exception as e:
+        print(f"Error retrieving Off Campus Housing requests: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error retrieving requests: {str(e)}")
+
+@router.get("/off-campus-housing/{request_id}", response_model=schemas.OffCampusHousingRequest)
+def get_off_campus_housing_request(request_id: int, db: Session = Depends(get_db)):
+    try:
+        request = db.query(models.OffCampusHousingRequest).filter(models.OffCampusHousingRequest.id == request_id).first()
+        if request is None:
+            raise HTTPException(status_code=404, detail="Request not found")
+        return request
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error retrieving Off Campus Housing request: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error retrieving request: {str(e)}")
+
+@router.delete("/off-campus-housing/{request_id}")
+def delete_off_campus_housing_request(request_id: int, db: Session = Depends(get_db)):
+    try:
+        request = db.query(models.OffCampusHousingRequest).filter(models.OffCampusHousingRequest.id == request_id).first()
+        if request is None:
+            raise HTTPException(status_code=404, detail="Request not found")
+        
+        db.delete(request)
+        db.commit()
+        
+        print(f"Deleted Off Campus Housing request {request_id}")
+        return {"message": "Request deleted successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        print(f"Error deleting Off Campus Housing request: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error deleting request: {str(e)}")
+
+@router.delete("/off-campus-housing/")
+def delete_all_off_campus_housing_requests(db: Session = Depends(get_db)):
+    try:
+        count = db.query(models.OffCampusHousingRequest).count()
+        
+        # Delete all records
+        db.query(models.OffCampusHousingRequest).delete()
+        db.commit()
+        
+        print(f"Deleted {count} Off Campus Housing requests")
+        return {"message": f"Successfully deleted {count} Off Campus Housing requests"}
+    except Exception as e:
+        db.rollback()
+        print(f"Error deleting Off Campus Housing requests: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error deleting Off Campus Housing requests: {str(e)}")

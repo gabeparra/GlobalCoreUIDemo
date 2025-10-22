@@ -24,14 +24,15 @@ export default function AllRequestsList() {
             setLoading(true)
 
             // Fetch all request types
-            const [i20Response, academicResponse, administrativeResponse, conversationResponse, optResponse, documentResponse, volunteerResponse] = await Promise.all([
+            const [i20Response, academicResponse, administrativeResponse, conversationResponse, optResponse, documentResponse, volunteerResponse, housingResponse] = await Promise.all([
                 fetch('http://localhost:8000/api/i20-requests/'),
                 fetch('http://localhost:8000/api/academic-training/'),
                 fetch('http://localhost:8000/api/administrative-record/'),
                 fetch('http://localhost:8000/api/conversation-partner/'),
                 fetch('http://localhost:8000/api/opt-requests/'),
                 fetch('http://localhost:8000/api/document-requests/'),
-                fetch('http://localhost:8000/api/english-language-volunteer/')
+                fetch('http://localhost:8000/api/english-language-volunteer/'),
+                fetch('http://localhost:8000/api/off-campus-housing/')
             ])
 
             if (!i20Response.ok) {
@@ -62,6 +63,10 @@ export default function AllRequestsList() {
                 throw new Error(`English Language Volunteer HTTP error! Status: ${volunteerResponse.status}`)
             }
 
+            if (!housingResponse.ok) {
+                throw new Error(`Off Campus Housing HTTP error! Status: ${housingResponse.status}`)
+            }
+
             const i20Data = await i20Response.json()
             const academicData = await academicResponse.json()
             const administrativeData = await administrativeResponse.json()
@@ -69,9 +74,10 @@ export default function AllRequestsList() {
             const optData = await optResponse.json()
             const documentData = await documentResponse.json()
             const volunteerData = await volunteerResponse.json()
+            const housingData = await housingResponse.json()
 
             // Combine all datasets
-            const allRequests = [...i20Data, ...academicData, ...administrativeData, ...conversationData, ...optData, ...documentData, ...volunteerData]
+            const allRequests = [...i20Data, ...academicData, ...administrativeData, ...conversationData, ...optData, ...documentData, ...volunteerData, ...housingData]
             console.log('Fetched I-20 requests:', i20Data.length)
             console.log('Fetched Academic Training requests:', academicData.length)
             console.log('Fetched Administrative Record requests:', administrativeData.length)
@@ -79,6 +85,7 @@ export default function AllRequestsList() {
             console.log('Fetched OPT requests:', optData.length)
             console.log('Fetched Document requests:', documentData.length)
             console.log('Fetched English Language Volunteer requests:', volunteerData.length)
+            console.log('Fetched Off Campus Housing requests:', housingData.length)
             console.log('Total requests:', allRequests.length)
 
             setRequests(allRequests)
@@ -110,6 +117,8 @@ export default function AllRequestsList() {
                 endpoint = `http://localhost:8000/api/document-requests/${requestId}`
             } else if (program === 'English Language Program Volunteer') {
                 endpoint = `http://localhost:8000/api/english-language-volunteer/${requestId}`
+            } else if (program === 'Off Campus Housing Application') {
+                endpoint = `http://localhost:8000/api/off-campus-housing/${requestId}`
             } else {
                 endpoint = `http://localhost:8000/api/i20-requests/${requestId}`
             }
@@ -168,6 +177,8 @@ export default function AllRequestsList() {
                     endpoint = `http://localhost:8000/api/document-requests/${reqId}`
                 } else if (request.program === 'English Language Program Volunteer') {
                     endpoint = `http://localhost:8000/api/english-language-volunteer/${reqId}`
+                } else if (request.program === 'Off Campus Housing Application') {
+                    endpoint = `http://localhost:8000/api/off-campus-housing/${reqId}`
                 } else {
                     endpoint = `http://localhost:8000/api/i20-requests/${reqId}`
                 }
@@ -212,17 +223,18 @@ export default function AllRequestsList() {
             setDeleteSuccess(false)
 
             // Delete from all endpoints
-            const [i20Response, academicResponse, administrativeResponse, conversationResponse, optResponse, documentResponse, volunteerResponse] = await Promise.all([
+            const [i20Response, academicResponse, administrativeResponse, conversationResponse, optResponse, documentResponse, volunteerResponse, housingResponse] = await Promise.all([
                 fetch('http://localhost:8000/api/i20-requests/', { method: 'DELETE' }),
                 fetch('http://localhost:8000/api/academic-training/', { method: 'DELETE' }),
                 fetch('http://localhost:8000/api/administrative-record/', { method: 'DELETE' }),
                 fetch('http://localhost:8000/api/conversation-partner/', { method: 'DELETE' }),
                 fetch('http://localhost:8000/api/opt-requests/', { method: 'DELETE' }),
                 fetch('http://localhost:8000/api/document-requests/', { method: 'DELETE' }),
-                fetch('http://localhost:8000/api/english-language-volunteer/', { method: 'DELETE' })
+                fetch('http://localhost:8000/api/english-language-volunteer/', { method: 'DELETE' }),
+                fetch('http://localhost:8000/api/off-campus-housing/', { method: 'DELETE' })
             ])
 
-            if (!i20Response.ok || !academicResponse.ok || !administrativeResponse.ok || !conversationResponse.ok || !optResponse.ok || !documentResponse.ok || !volunteerResponse.ok) {
+            if (!i20Response.ok || !academicResponse.ok || !administrativeResponse.ok || !conversationResponse.ok || !optResponse.ok || !documentResponse.ok || !volunteerResponse.ok || !housingResponse.ok) {
                 const i20Error = i20Response.ok ? '' : await i20Response.text()
                 const academicError = academicResponse.ok ? '' : await academicResponse.text()
                 const adminError = administrativeResponse.ok ? '' : await administrativeResponse.text()
@@ -230,7 +242,8 @@ export default function AllRequestsList() {
                 const optError = optResponse.ok ? '' : await optResponse.text()
                 const documentError = documentResponse.ok ? '' : await documentResponse.text()
                 const volunteerError = volunteerResponse.ok ? '' : await volunteerResponse.text()
-                throw new Error(`Failed to delete requests: ${i20Error} ${academicError} ${adminError} ${conversationError} ${optError} ${documentError} ${volunteerError}`)
+                const housingError = housingResponse.ok ? '' : await housingResponse.text()
+                throw new Error(`Failed to delete requests: ${i20Error} ${academicError} ${adminError} ${conversationError} ${optError} ${documentError} ${volunteerError} ${housingError}`)
             }
 
             console.log('All requests deleted successfully')
@@ -317,7 +330,8 @@ export default function AllRequestsList() {
         req.program !== 'Conversation Partner' &&
         req.program !== 'OPT Request' &&
         req.program !== 'Document Request' &&
-        req.program !== 'English Language Program Volunteer'
+        req.program !== 'English Language Program Volunteer' &&
+        req.program !== 'Off Campus Housing Application'
     );
     const academicTrainingRequests = requests.filter(req => req.program === 'Academic Training');
     const administrativeRecordRequests = requests.filter(req => req.program === 'Administrative Record Change');
@@ -325,6 +339,7 @@ export default function AllRequestsList() {
     const optRequests = requests.filter(req => req.program === 'OPT Request');
     const documentRequests = requests.filter(req => req.program === 'Document Request');
     const volunteerRequests = requests.filter(req => req.program === 'English Language Program Volunteer');
+    const housingRequests = requests.filter(req => req.program === 'Off Campus Housing Application');
 
     // Get request type
     const getRequestType = (request) => {
@@ -353,6 +368,9 @@ export default function AllRequestsList() {
         } else if (request.program === 'English Language Program Volunteer') {
             const academicLevel = request.form_data?.academic_level || 'N/A';
             return `English Language Volunteer: ${academicLevel}`;
+        } else if (request.program === 'Off Campus Housing Application') {
+            const paymentStatus = request.form_data?.payment_status || 'PENDING';
+            return `Off Campus Housing: ${paymentStatus}`;
         } else {
             return request.program;
         }
@@ -473,6 +491,15 @@ export default function AllRequestsList() {
                                             role="tab"
                                         >
                                             English Language Volunteer ({volunteerRequests.length})
+                                        </CNavLink>
+                                    </CNavItem>
+                                    <CNavItem>
+                                        <CNavLink
+                                            active={activeTab === 9}
+                                            onClick={() => setActiveTab(9)}
+                                            role="tab"
+                                        >
+                                            Off Campus Housing ({housingRequests.length})
                                         </CNavLink>
                                     </CNavItem>
                                 </CNav>
@@ -979,6 +1006,78 @@ export default function AllRequestsList() {
                                             </CTableBody>
                                         </CTable>
                                     </CTabPane>
+
+                                    <CTabPane role="tabpanel" visible={activeTab === 9}>
+                                        <CTable hover responsive>
+                                            <CTableHead>
+                                                <CTableRow>
+                                                    <CTableHeaderCell scope="col">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={selectedRequests.length === housingRequests.length && housingRequests.length > 0}
+                                                            onChange={() => toggleSelectAll(housingRequests)}
+                                                        />
+                                                    </CTableHeaderCell>
+                                                    <CTableHeaderCell scope="col">#</CTableHeaderCell>
+                                                    <CTableHeaderCell scope="col">Student Name</CTableHeaderCell>
+                                                    <CTableHeaderCell scope="col">Student ID</CTableHeaderCell>
+                                                    <CTableHeaderCell scope="col">Program Type</CTableHeaderCell>
+                                                    <CTableHeaderCell scope="col">Payment Status</CTableHeaderCell>
+                                                    <CTableHeaderCell scope="col">Submission Date</CTableHeaderCell>
+                                                    <CTableHeaderCell scope="col">Status</CTableHeaderCell>
+                                                    <CTableHeaderCell scope="col">Actions</CTableHeaderCell>
+                                                </CTableRow>
+                                            </CTableHead>
+                                            <CTableBody>
+                                                {housingRequests.map((request) => (
+                                                    <CTableRow key={request.id}>
+                                                        <CTableDataCell>
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={selectedRequests.includes(request.id)}
+                                                                onChange={() => toggleSelection(request.id)}
+                                                            />
+                                                        </CTableDataCell>
+                                                        <CTableHeaderCell scope="row">{request.id}</CTableHeaderCell>
+                                                        <CTableDataCell>{request.student_name}</CTableDataCell>
+                                                        <CTableDataCell>{request.student_id}</CTableDataCell>
+                                                        <CTableDataCell>
+                                                            {request.form_data?.program_type || 'N/A'}
+                                                        </CTableDataCell>
+                                                        <CTableDataCell>
+                                                            <span className={`badge bg-${request.form_data?.payment_status === 'PAID' ? 'success' : 'warning'}`}>
+                                                                {request.form_data?.payment_status || 'PENDING'}
+                                                            </span>
+                                                        </CTableDataCell>
+                                                        <CTableDataCell>{formatDate(request.submission_date)}</CTableDataCell>
+                                                        <CTableDataCell>
+                                                            <span className={`badge bg-${request.status === 'pending' ? 'warning' : 'success'}`}>
+                                                                {request.status}
+                                                            </span>
+                                                        </CTableDataCell>
+                                                        <CTableDataCell>
+                                                            <CButton
+                                                                size="sm"
+                                                                color="danger"
+                                                                className="me-2"
+                                                                onClick={() => deleteRequest(request.id, request.program)}
+                                                                disabled={isDeleting}
+                                                            >
+                                                                Delete
+                                                            </CButton>
+                                                            <CButton
+                                                                size="sm"
+                                                                color="primary"
+                                                                onClick={() => viewRequest(request)}
+                                                            >
+                                                                View
+                                                            </CButton>
+                                                        </CTableDataCell>
+                                                    </CTableRow>
+                                                ))}
+                                            </CTableBody>
+                                        </CTable>
+                                    </CTabPane>
                                 </CTabContent>
 
                                 <h4 className="mt-4">Detailed Request Data</h4>
@@ -998,7 +1097,9 @@ export default function AllRequestsList() {
                                                                     ? 'Document Request'
                                                                     : request.program === 'English Language Program Volunteer'
                                                                         ? 'English Language Volunteer'
-                                                                        : 'I-20'} Request #{request.id} - {request.student_name}
+                                                                        : request.program === 'Off Campus Housing Application'
+                                                                            ? 'Off Campus Housing'
+                                                                            : 'I-20'} Request #{request.id} - {request.student_name}
                                             </CAccordionHeader>
                                             <CAccordionBody>
                                                 <h5>Basic Information</h5>
@@ -1078,7 +1179,9 @@ export default function AllRequestsList() {
                                                     ? 'Document Request'
                                                     : selectedRequest.program === 'English Language Program Volunteer'
                                                         ? 'English Language Program Volunteer'
-                                                        : 'I-20 Request'} #{selectedRequest.id}
+                                                        : selectedRequest.program === 'Off Campus Housing Application'
+                                                            ? 'Off Campus Housing Application'
+                                                            : 'I-20 Request'} #{selectedRequest.id}
                             </>
                         )}
                     </CModalTitle>

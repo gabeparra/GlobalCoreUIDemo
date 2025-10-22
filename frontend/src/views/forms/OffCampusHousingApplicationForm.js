@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { useNavigate } from 'react-router-dom'
 import "@coreui/coreui/dist/css/coreui.min.css"
 import {
     CForm,
@@ -13,9 +14,16 @@ import {
     CCard,
     CCardBody,
     CCardHeader,
+    CAlert,
+    CSpinner,
 } from "@coreui/react"
 
 export default function OffCampusHousingApplicationForm() {
+    const navigate = useNavigate()
+    const [loading, setLoading] = useState(false)
+    const [error, setError] = useState(null)
+    const [success, setSuccess] = useState(false)
+
     const [formData, setFormData] = useState({
         ucfId: import.meta.env.VITE_PLACEHOLDER_UCF_ID || "",
         firstName: import.meta.env.VITE_PLACEHOLDER_GIVEN_NAME || "",
@@ -25,34 +33,105 @@ export default function OffCampusHousingApplicationForm() {
         emailAddress: import.meta.env.VITE_PLACEHOLDER_STUDENT_EMAIL || "",
         program: "graduate",
         housingSelections: {
-            spring2026: false,
+            spring2026: true,
             spring2026Session2: false,
-            summer2026: false,
+            summer2026: true,
             summer2026Session2: false,
-            fall2025: false,
+            fall2025: true,
         },
-        acknowledgement: false,
+        acknowledgement: true,
     })
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault()
-        console.log("Form submitted:", formData)
-        // Add submission logic here
+        setLoading(true)
+        setError(null)
+        setSuccess(false)
+
+        try {
+            // Validate required fields
+            if (!formData.ucfId || !formData.firstName || !formData.lastName || !formData.emailAddress) {
+                throw new Error('Please fill in all required fields.')
+            }
+
+            if (!formData.acknowledgement) {
+                throw new Error('Please acknowledge the terms and conditions.')
+            }
+
+            // Check if at least one housing selection is made
+            const hasHousingSelection = Object.values(formData.housingSelections).some(val => val === true)
+            if (!hasHousingSelection) {
+                throw new Error('Please select at least one semester for housing.')
+            }
+
+            // Create student name from first and last name
+            const studentName = `${formData.firstName} ${formData.lastName}`.trim()
+
+            // Convert form data to snake_case for backend
+            const requestData = {
+                student_name: studentName,
+                student_id: formData.ucfId,
+                program: "Off Campus Housing Application",
+                ucf_id: formData.ucfId,
+                first_name: formData.firstName,
+                last_name: formData.lastName,
+                date_of_birth: formData.dateOfBirth,
+                gender: formData.gender,
+                email_address: formData.emailAddress,
+                program_type: formData.program,
+                housing_spring_2026: formData.housingSelections.spring2026,
+                housing_spring_2026_session_2: formData.housingSelections.spring2026Session2,
+                housing_summer_2026: formData.housingSelections.summer2026,
+                housing_summer_2026_session_2: formData.housingSelections.summer2026Session2,
+                housing_fall_2025: formData.housingSelections.fall2025,
+                acknowledgement: formData.acknowledgement,
+                amount_due: 250.00,
+                payment_status: "PENDING"
+            }
+
+            console.log('Submitting Off Campus Housing Application:', requestData)
+
+            const response = await fetch('http://localhost:8000/api/off-campus-housing/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(requestData)
+            })
+
+            if (!response.ok) {
+                const errorData = await response.text()
+                throw new Error(`Server error: ${response.status} - ${errorData}`)
+            }
+
+            const result = await response.json()
+            console.log('Off Campus Housing Application submitted successfully:', result)
+
+            setSuccess(true)
+            setTimeout(() => {
+                navigate('/forms/all-requests')
+            }, 2000)
+
+        } catch (err) {
+            console.error('Error submitting Off Campus Housing Application:', err)
+            setError(err.message)
+        } finally {
+            setLoading(false)
+        }
     }
 
     const handleCancel = () => {
-        console.log("Changes cancelled")
-        // Reset form or navigate away
+        navigate('/')
     }
 
     const handleSave = () => {
         console.log("Form saved:", formData)
-        // Add save logic here
+        // Add save logic here if needed
     }
 
-    const handlePayment = () => {
-        console.log("Proceeding to payment:", formData)
-        // Add payment logic here
+    const handlePayment = async (e) => {
+        e.preventDefault()
+        await handleSubmit(e)
     }
 
     const handleHousingSelection = (semester) => {
@@ -86,6 +165,9 @@ export default function OffCampusHousingApplicationForm() {
 
                 {/* Form Content */}
                 <CContainer className="py-4">
+                    {error && <CAlert color="danger" className="mb-3">{error}</CAlert>}
+                    {success && <CAlert color="success" className="mb-3">Off Campus Housing Application submitted successfully! Redirecting...</CAlert>}
+
                     <CForm onSubmit={handleSubmit}>
                         <CCard className="mb-4">
                             <CCardBody>
@@ -311,11 +393,20 @@ export default function OffCampusHousingApplicationForm() {
                                         color="warning"
                                         className="text-dark"
                                         onClick={handlePayment}
-                                        disabled={!formData.acknowledgement}
+                                        disabled={!formData.acknowledgement || loading}
                                     >
-                                        <span className="me-2">✓</span>Ready for payment
+                                        {loading ? (
+                                            <>
+                                                <CSpinner size="sm" className="me-2" />
+                                                Processing...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <span className="me-2">✓</span>Ready for payment
+                                            </>
+                                        )}
                                     </CButton>
-                                    <CButton type="button" color="danger" onClick={handleCancel} className="text-white">
+                                    <CButton type="button" color="danger" onClick={handleCancel} className="text-white" disabled={loading}>
                                         <span className="me-2">✕</span>Cancel
                                     </CButton>
                                 </div>
