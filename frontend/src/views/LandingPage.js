@@ -99,6 +99,12 @@ export default function LandingPage() {
             description: 'View all submitted forms including I-20 requests and Academic Training requests.',
             icon: '📋',
             path: '/forms/all-requests'
+        },
+        {
+            title: 'Pathway Programs Intent to Progress',
+            description: 'Submit your Intent to Progress for Pathway Programs at UCF Global.',
+            icon: '📝',
+            path: '/forms/pathway-programs-intent-to-progress'
         }
     ]
 

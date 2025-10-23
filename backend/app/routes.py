@@ -1786,6 +1786,12 @@ def delete_all_exit_forms(db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=f"Error deleting Exit Forms: {str(e)}")
 
 # Pathway Programs Intent to Progress Routes
+# Helper function to convert string to boolean
+def str_to_bool(value):
+    if value is None:
+        return None
+    return value.lower() in ['true', 'yes', '1', 'on']
+
 @router.post("/pathway-programs-intent-to-progress/", response_model=schemas.PathwayProgramsIntentToProgress)
 async def create_pathway_programs_intent_to_progress(
     # Student Information

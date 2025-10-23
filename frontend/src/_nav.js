@@ -106,6 +106,12 @@ const _nav = [
         to: '/forms/all-requests',
         icon: <CIcon icon={cilUser} customClassName="nav-icon" />,
       },
+      {
+        component: CNavItem,
+        name: 'Pathway Programs Intent to Progress',
+        to: '/forms/pathway-programs-intent-to-progress',
+        icon: <CIcon icon={cilPencil} customClassName="nav-icon" />,
+      },
     ],
   },
 ]
