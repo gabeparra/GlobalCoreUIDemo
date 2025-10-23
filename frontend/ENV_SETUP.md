@@ -67,6 +67,38 @@ The following environment variables are used for the Academic Training form:
 ### Other
 - `VITE_PLACEHOLDER_COMMENTS` - Default comments text
 
+## Leave Request Form Placeholders
+
+The following environment variables are used for the Leave Request form:
+
+### Employee Information
+- `VITE_PLACEHOLDER_UCF_ID` - Employee/Student ID (shared with other forms)
+- `VITE_PLACEHOLDER_GIVEN_NAME` - First Name (shared with other forms)
+- `VITE_PLACEHOLDER_FAMILY_NAME` - Last Name (shared with other forms)
+
+### Leave Information
+- `VITE_PLACEHOLDER_LEAVE_TYPE` - Leave type (sick, vacation, personal, etc.)
+- `VITE_PLACEHOLDER_LEAVE_FROM_DATE` - Leave start date (YYYY-MM-DD)
+- `VITE_PLACEHOLDER_LEAVE_FROM_TIME` - Leave start time (HH:MM)
+- `VITE_PLACEHOLDER_LEAVE_TO_DATE` - Leave end date (YYYY-MM-DD)
+- `VITE_PLACEHOLDER_LEAVE_TO_TIME` - Leave end time (HH:MM)
+- `VITE_PLACEHOLDER_LEAVE_HOURS` - Hours requested
+- `VITE_PLACEHOLDER_LEAVE_REASON` - Reason for leave
+
+### Faculty Information
+- `VITE_PLACEHOLDER_COURSE_NAME` - Course name
+
+## Exit Form Placeholders
+- `VITE_PLACEHOLDER_EXIT_US_STREET_ADDRESS`: U.S. Street Address
+- `VITE_PLACEHOLDER_EXIT_APARTMENT_NUMBER`: Apartment Number
+- `VITE_PLACEHOLDER_EXIT_FOREIGN_STREET_ADDRESS`: Foreign Street Address
+- `VITE_PLACEHOLDER_EXIT_FOREIGN_CITY`: Foreign City
+- `VITE_PLACEHOLDER_EXIT_FOREIGN_POSTAL_CODE`: Foreign Postal Code
+- `VITE_PLACEHOLDER_EXIT_COUNTRY`: Country of Return
+- `VITE_PLACEHOLDER_EXIT_SECONDARY_EMAIL`: Secondary Email
+- `VITE_PLACEHOLDER_EXIT_FOREIGN_TELEPHONE`: Foreign Telephone
+- `VITE_PLACEHOLDER_EXIT_DEPARTURE_REASON`: Departure Reason
+
 ## Development Server
 
 After modifying `.env`, you need to restart the development server for changes to take effect:

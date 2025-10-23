@@ -13,6 +13,7 @@ const LeaveRequestForm = React.lazy(() => import('./views/forms/LeaveRequestForm
 const LinkagesApplicationForm = React.lazy(() => import('./views/forms/LinkagesApplicationForm'))
 const OffCampusHousingApplicationForm = React.lazy(() => import('./views/forms/OffCampusHousingApplicationForm'))
 const OptStemExtensionReportingForm = React.lazy(() => import('./views/forms/OptStemExtensionReportingForm'))
+const OptStemExtensionApplicationForm = React.lazy(() => import('./views/forms/OptStemExtensionApplication'))
 const ExitForm = React.lazy(() => import('./views/forms/ExitForm'))
 const AllRequestsList = React.lazy(() => import('./views/forms/AllRequestsList'))
 
@@ -30,6 +31,7 @@ const routes = [
   { path: '/forms/linkages-application', name: 'Linkages Application Form', element: LinkagesApplicationForm },
   { path: '/forms/off-campus-housing', name: 'Off Campus Housing Application Form', element: OffCampusHousingApplicationForm },
   { path: '/forms/opt-stem-reporting', name: 'OPT and STEM Extension Reporting Form', element: OptStemExtensionReportingForm },
+  { path: '/forms/opt-stem-extension-application', name: 'OPT STEM Extension Application Form', element: OptStemExtensionApplicationForm },
   { path: '/forms/exit', name: 'Exit Form', element: ExitForm },
   { path: '/forms/all-requests', name: 'All Form Submissions', element: AllRequestsList },
 ]

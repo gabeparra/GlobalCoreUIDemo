@@ -1,0 +1,67 @@
+# Ignore node modules (same as .gitignore)
+node_modules/
+
+# Ignore build artifacts
+frontend/build/
+frontend/coverage/
+dist/
+
+# Ignore Python cache and virtual environment
+backend/__pycache__/
+backend/**/__pycache__/
+backend/venv/
+**/*.pyc
+**/*.pyo
+**/*.pyd
+.Python
+
+# Ignore lock files (same as .gitignore)
+package-lock.json
+yarn.lock
+
+# Ignore IDE files
+.eslintcache
+.DS_Store
+.idea
+
+# Ignore logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Ignore database files
+**/*.db
+**/*.sqlite
+**/*.sqlite3
+
+# IMPORTANT: Un-ignore files that are in .gitignore but we want Cursor to see
+# Use ! to negate the ignore pattern and override .gitignore
+!.env
+!**/.env
+!.env.local
+!.env.development.local
+!.env.test.local
+!.env.production.local
+!frontend/.env
+!backend/.env
+!env.example
+
+# Un-ignore uploads directory so Cursor can index uploaded files
+!backend/uploads/
+!backend/uploads/**
+!uploads/
+!uploads/**
+
+# Un-ignore specific upload subdirectories
+!backend/uploads/academic_training/
+!backend/uploads/academic_training/**
+!backend/uploads/florida_statute_101035/
+!backend/uploads/florida_statute_101035/**
+!backend/uploads/opt_requests/
+!backend/uploads/opt_requests/**
+!backend/uploads/leave_requests/
+!backend/uploads/leave_requests/**
+!backend/uploads/opt_stem_applications/
+!backend/uploads/opt_stem_applications/**
+!backend/uploads/exit_forms/
+!backend/uploads/exit_forms/**

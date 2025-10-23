@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { useNavigate } from "react-router-dom"
 import "@coreui/coreui/dist/css/coreui.min.css"
 import {
     CForm,
@@ -14,29 +15,94 @@ import {
     CCardBody,
     CCardHeader,
     CTable,
+    CAlert,
+    CSpinner,
 } from "@coreui/react"
 
 export default function LeaveRequestForm() {
+    const navigate = useNavigate()
+
     const [formData, setFormData] = useState({
-        employeeId: import.meta.env.VITE_PLACEHOLDER_UCF_ID || "",
-        firstName: import.meta.env.VITE_PLACEHOLDER_GIVEN_NAME || "",
-        lastName: import.meta.env.VITE_PLACEHOLDER_FAMILY_NAME || "",
-        leaveType: "",
+        employeeId: import.meta.env.VITE_PLACEHOLDER_UCF_ID || "1234567",
+        firstName: import.meta.env.VITE_PLACEHOLDER_GIVEN_NAME || "John",
+        lastName: import.meta.env.VITE_PLACEHOLDER_FAMILY_NAME || "Doe",
+        leaveType: import.meta.env.VITE_PLACEHOLDER_LEAVE_TYPE || "sick",
         documentation: null,
-        fromDate: new Date().toISOString().split('T')[0],
-        fromTime: new Date().toISOString().split('T')[1],
-        toDate: new Date().toISOString().split('T')[0],
-        toTime: new Date().toISOString().split('T')[1],
-        hoursRequested: "",
-        reason: "I am requesting leave for personal reasons.",
-        courseName: "English 101",
+        fromDate: import.meta.env.VITE_PLACEHOLDER_LEAVE_FROM_DATE || "2025-10-24",
+        fromTime: import.meta.env.VITE_PLACEHOLDER_LEAVE_FROM_TIME || "08:00",
+        toDate: import.meta.env.VITE_PLACEHOLDER_LEAVE_TO_DATE || "2025-10-25",
+        toTime: import.meta.env.VITE_PLACEHOLDER_LEAVE_TO_TIME || "17:00",
+        hoursRequested: import.meta.env.VITE_PLACEHOLDER_LEAVE_HOURS || "8",
+        reason: import.meta.env.VITE_PLACEHOLDER_LEAVE_REASON || "I am requesting leave for personal reasons.",
+        courseName: import.meta.env.VITE_PLACEHOLDER_COURSE_NAME || "English 101",
         classes: [],
     })
 
-    const handleSubmit = (e) => {
+    const [isSubmitting, setIsSubmitting] = useState(false)
+    const [submitError, setSubmitError] = useState(null)
+    const [submitSuccess, setSubmitSuccess] = useState(false)
+
+    const handleSubmit = async (e) => {
         e.preventDefault()
-        console.log("Form submitted:", formData)
-        // Add submission logic here
+        setIsSubmitting(true)
+        setSubmitError(null)
+        setSubmitSuccess(false)
+
+        try {
+            // Validate required fields
+            if (!formData.employeeId || !formData.firstName || !formData.lastName ||
+                !formData.leaveType || !formData.fromDate || !formData.fromTime ||
+                !formData.toDate || !formData.toTime || !formData.hoursRequested) {
+                throw new Error('Please fill in all required fields')
+            }
+
+            // Create FormData for file upload
+            const submitData = new FormData()
+
+            // Add all form fields
+            submitData.append('employee_id', formData.employeeId)
+            submitData.append('first_name', formData.firstName)
+            submitData.append('last_name', formData.lastName)
+            submitData.append('leave_type', formData.leaveType)
+            submitData.append('from_date', formData.fromDate)
+            submitData.append('from_time', formData.fromTime)
+            submitData.append('to_date', formData.toDate)
+            submitData.append('to_time', formData.toTime)
+            submitData.append('hours_requested', formData.hoursRequested)
+            submitData.append('reason', formData.reason || '')
+            submitData.append('course_name', formData.courseName || '')
+
+            // Add file if present
+            if (formData.documentation) {
+                submitData.append('documentation', formData.documentation)
+            }
+
+            // Submit to backend
+            const response = await fetch('http://localhost:8000/api/leave-requests/', {
+                method: 'POST',
+                body: submitData,
+            })
+
+            if (!response.ok) {
+                const errorData = await response.json()
+                throw new Error(errorData.detail || 'Failed to submit leave request')
+            }
+
+            const result = await response.json()
+            console.log('Leave request submitted successfully:', result)
+            setSubmitSuccess(true)
+
+            // Redirect to All Requests List after 2 seconds
+            setTimeout(() => {
+                navigate('/forms/all-requests')
+            }, 2000)
+
+        } catch (error) {
+            console.error('Error submitting leave request:', error)
+            setSubmitError(error.message)
+        } finally {
+            setIsSubmitting(false)
+        }
     }
 
     const handleCancel = () => {
@@ -83,6 +149,18 @@ export default function LeaveRequestForm() {
                 {/* Form Content */}
                 <CContainer className="py-4">
                     <CForm onSubmit={handleSubmit}>
+                        {/* Success/Error Messages */}
+                        {submitSuccess && (
+                            <CAlert color="success" className="mb-4">
+                                ✓ Leave request submitted successfully! Redirecting to all requests...
+                            </CAlert>
+                        )}
+                        {submitError && (
+                            <CAlert color="danger" className="mb-4">
+                                ✕ {submitError}
+                            </CAlert>
+                        )}
+
                         {/* Employee Information Section */}
                         <CCard className="mb-4">
                             <CCardHeader className="bg-warning text-dark">
@@ -171,17 +249,13 @@ export default function LeaveRequestForm() {
 
                                 <div className="mb-4">
                                     <h6 className="mb-3">Documentation</h6>
-                                    <div className="d-flex align-items-center mb-3">
+                                    <div className="mb-3">
                                         <CFormInput
                                             type="file"
                                             accept=".pdf,.jpg,.jpeg,.png"
                                             onChange={handleFileUpload}
-                                            className="me-3"
-                                            style={{ maxWidth: "300px" }}
+                                            style={{ maxWidth: "400px" }}
                                         />
-                                        <CButton color="warning" className="text-dark">
-                                            <span className="me-2">📄</span>Upload Document
-                                        </CButton>
                                     </div>
                                     {formData.documentation && (
                                         <div className="mb-3">
@@ -354,10 +428,19 @@ export default function LeaveRequestForm() {
 
                         {/* Action Buttons */}
                         <div className="d-flex gap-2">
-                            <CButton type="submit" color="success" className="text-white">
-                                <span className="me-2">✓</span>Submit
+                            <CButton type="submit" color="success" className="text-white" disabled={isSubmitting}>
+                                {isSubmitting ? (
+                                    <>
+                                        <CSpinner size="sm" className="me-2" />
+                                        Submitting...
+                                    </>
+                                ) : (
+                                    <>
+                                        <span className="me-2">✓</span>Submit
+                                    </>
+                                )}
                             </CButton>
-                            <CButton type="button" color="danger" onClick={handleCancel} className="text-white">
+                            <CButton type="button" color="danger" onClick={handleCancel} className="text-white" disabled={isSubmitting}>
                                 <span className="me-2">✕</span>Cancel Changes
                             </CButton>
                         </div>

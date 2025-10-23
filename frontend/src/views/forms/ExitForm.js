@@ -1,4 +1,4 @@
-import { useState } from "react"
+import React, { useState } from "react"
 import "@coreui/coreui/dist/css/coreui.min.css"
 import {
     CForm,
@@ -11,46 +11,153 @@ import {
     CRow,
     CCol,
     CFormTextarea,
+    CAlert,
+    CSpinner
 } from "@coreui/react"
+import { useNavigate } from 'react-router-dom'
 
 export default function UCFGlobalExitForm() {
+    const navigate = useNavigate()
+    const [isSubmitting, setIsSubmitting] = useState(false)
+    const [submitError, setSubmitError] = useState('')
+    const [submitSuccess, setSubmitSuccess] = useState(false)
+
     const [formData, setFormData] = useState({
-        // Biographical Information
-        ucfId: import.meta.env.VITE_PLACEHOLDER_UCF_ID || "",
-        sevisId: import.meta.env.VITE_PLACEHOLDER_SEVIS_ID || "",
-        visaType: "",
-        givenName: import.meta.env.VITE_PLACEHOLDER_GIVEN_NAME || "",
-        familyName: import.meta.env.VITE_PLACEHOLDER_FAMILY_NAME || "",
-        usStreetAddress: "",
-        apartmentNumber: "",
-        city: import.meta.env.VITE_PLACEHOLDER_CITY || "",
-        state: import.meta.env.VITE_PLACEHOLDER_STATE || "",
-        postalCode: "",
-        foreignStreetAddress: "",
-        foreignCity: import.meta.env.VITE_PLACEHOLDER_CITY || "",
-        foreignPostalCode: "",
-        country: "",
-        ucfEmail: import.meta.env.VITE_PLACEHOLDER_STUDENT_EMAIL || "",
-        secondaryEmail: import.meta.env.VITE_PLACEHOLDER_SECONDARY_EMAIL || "",
-        usTelephone: import.meta.env.VITE_PLACEHOLDER_US_TELEPHONE ||  "",
-        foreignTelephone: "",
+        // Biographical Information - using .env values
+        ucf_id: import.meta.env.VITE_PLACEHOLDER_UCF_ID || "1234567",
+        sevis_id: import.meta.env.VITE_PLACEHOLDER_SEVIS_ID || "N0012345678",
+        visa_type: import.meta.env.VITE_PLACEHOLDER_VISA_TYPE || "F-1",
+        given_name: import.meta.env.VITE_PLACEHOLDER_GIVEN_NAME || "John",
+        family_name: import.meta.env.VITE_PLACEHOLDER_FAMILY_NAME || "Doe",
+
+        // U.S. Address - using .env values
+        us_street_address: import.meta.env.VITE_PLACEHOLDER_EXIT_US_STREET_ADDRESS || "456 College Avenue",
+        apartment_number: import.meta.env.VITE_PLACEHOLDER_EXIT_APARTMENT_NUMBER || "Apt 201",
+        city: import.meta.env.VITE_PLACEHOLDER_CITY || "Orlando",
+        state: "Florida", // Must match select option values
+        postal_code: "32816",
+
+        // Foreign Address - using .env values
+        foreign_street_address: import.meta.env.VITE_PLACEHOLDER_EXIT_FOREIGN_STREET_ADDRESS || "789 International Blvd",
+        foreign_city: import.meta.env.VITE_PLACEHOLDER_EXIT_FOREIGN_CITY || "Madrid",
+        foreign_postal_code: import.meta.env.VITE_PLACEHOLDER_EXIT_FOREIGN_POSTAL_CODE || "28001",
+        country: import.meta.env.VITE_PLACEHOLDER_EXIT_COUNTRY || "Spain",
+
+        // Contact Information - using .env values
+        ucf_email: import.meta.env.VITE_PLACEHOLDER_STUDENT_EMAIL || "john.doe@knights.ucf.edu",
+        secondary_email: import.meta.env.VITE_PLACEHOLDER_EXIT_SECONDARY_EMAIL || "jane.smith@example.com",
+        us_telephone: import.meta.env.VITE_PLACEHOLDER_US_TELEPHONE || "(407) 555-1234",
+        foreign_telephone: import.meta.env.VITE_PLACEHOLDER_EXIT_FOREIGN_TELEPHONE || "+34 (123) 456-7890",
+
         // Current Academic Information
-        educationLevel: "graduate",
-        employedOnCampus: "yes",
-        // Departure Information
-        departureDate: new Date().toISOString().split('T')[0],
-        flightItinerary: null,
-        departureReason: "",
-        // Submission
-        workAuthorizationAcknowledgment: false,
-        cptOptAcknowledgment: false,
-        financialObligationsAcknowledgment: false,
-        remarks: "I am leaving the United States to return to my home country.",
+        education_level: "graduate",
+        employed_on_campus: "no",
+
+        // Departure Information - using .env values
+        departure_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days from now
+        flight_itinerary: null,
+        departure_reason: import.meta.env.VITE_PLACEHOLDER_EXIT_DEPARTURE_REASON || "Completing my degree program and returning to home country",
+
+        // Submission - all pre-checked for testing
+        work_authorization_acknowledgment: true,
+        cpt_opt_acknowledgment: true,
+        financial_obligations_acknowledgment: true,
+        remarks: "I have completed my studies at UCF and will be returning to my home country. Thank you for the support during my time here."
     })
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault()
-        console.log("Form submitted:", formData)
+        setIsSubmitting(true)
+        setSubmitError('')
+        setSubmitSuccess(false)
+
+        try {
+            const submitData = new FormData()
+
+            // Detailed logging of form data
+            console.log('Full Form Data:', formData)
+
+            // Add all form fields, converting booleans to strings
+            Object.keys(formData).forEach(key => {
+                // List of required fields that must be sent
+                const requiredFields = [
+                    'ucf_id',
+                    'given_name',
+                    'family_name',
+                    'ucf_email'
+                ]
+
+                // Always send required fields, even if empty
+                if (requiredFields.includes(key) ||
+                    (formData[key] !== null && formData[key] !== undefined)) {
+                    // Convert booleans to string for FormData
+                    const value = typeof formData[key] === 'boolean'
+                        ? formData[key].toString()
+                        : (formData[key] || '') // Use empty string if value is undefined
+
+                    // Log each field being added
+                    console.log(`Adding field: ${key} = ${value}`)
+
+                    // Only append if it's not a File object or if it has a name (actual file)
+                    if (!(value instanceof File) || (value instanceof File && value.name)) {
+                        submitData.append(key, value)
+                    }
+                }
+            })
+
+            // Log FormData contents
+            console.log('Submitted FormData:')
+            for (let [key, value] of submitData.entries()) {
+                console.log(`${key}: ${value}`)
+            }
+
+            const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'
+            console.log('Submitting to URL:', `${backendUrl}/api/exit-forms/`)
+
+            try {
+                const response = await fetch(`${backendUrl}/api/exit-forms/`, {
+                    method: 'POST',
+                    body: submitData,
+                    headers: {
+                        // Optional: Add any specific headers if needed
+                        // 'Content-Type': 'multipart/form-data' // Usually not needed with FormData
+                    }
+                })
+
+                console.log('Response status:', response.status)
+
+                if (!response.ok) {
+                    const errorData = await response.text()
+                    console.error('Server error details:', errorData)
+                    throw new Error(`Server error: ${response.status} - ${errorData}`)
+                }
+
+                const result = await response.json()
+                console.log('Exit Form submitted successfully:', result)
+
+                setSubmitSuccess(true)
+
+                // Redirect to All Requests List after 2 seconds
+                setTimeout(() => {
+                    navigate('/forms/all-requests')
+                }, 2000)
+
+            } catch (fetchError) {
+                console.error('Fetch error details:', fetchError)
+                throw fetchError
+            }
+
+        } catch (error) {
+            console.error('Error submitting Exit Form:', error)
+            // Check if it's a network error
+            if (error instanceof TypeError && error.message === 'Failed to fetch') {
+                setSubmitError('Network error. Please check your backend server is running.')
+            } else {
+                setSubmitError(`Failed to submit form: ${error.message}`)
+            }
+        } finally {
+            setIsSubmitting(false)
+        }
     }
 
     const handleSaveForLater = () => {
@@ -59,7 +166,7 @@ export default function UCFGlobalExitForm() {
 
     const handleFileUpload = (e) => {
         const file = e.target.files[0]
-        setFormData({ ...formData, flightItinerary: file })
+        setFormData({ ...formData, flight_itinerary: file })
     }
 
     return (
@@ -74,6 +181,18 @@ export default function UCFGlobalExitForm() {
 
                 {/* Form Content */}
                 <CContainer className="py-4">
+                    {submitError && (
+                        <CAlert color="danger" className="mb-3">
+                            {submitError}
+                        </CAlert>
+                    )}
+
+                    {submitSuccess && (
+                        <CAlert color="success" className="mb-3">
+                            Exit Form submitted successfully! Redirecting to All Requests List...
+                        </CAlert>
+                    )}
+
                     {/* Save for Later Button */}
                     <div className="mb-3">
                         <CButton color="warning" onClick={handleSaveForLater}>
@@ -110,8 +229,8 @@ export default function UCFGlobalExitForm() {
                                     </CFormLabel>
                                     <CFormInput
                                         type="text"
-                                        value={formData.ucfId}
-                                        onChange={(e) => setFormData({ ...formData, ucfId: e.target.value })}
+                                        value={formData.ucf_id}
+                                        onChange={(e) => setFormData({ ...formData, ucf_id: e.target.value })}
                                         readOnly
                                     />
                                 </div>
@@ -126,8 +245,8 @@ export default function UCFGlobalExitForm() {
                                     </CFormLabel>
                                     <CFormInput
                                         type="text"
-                                        value={formData.sevisId}
-                                        onChange={(e) => setFormData({ ...formData, sevisId: e.target.value })}
+                                        value={formData.sevis_id}
+                                        onChange={(e) => setFormData({ ...formData, sevis_id: e.target.value })}
                                         required
                                     />
                                 </div>
@@ -143,21 +262,21 @@ export default function UCFGlobalExitForm() {
                                     <div className="d-flex gap-3">
                                         <CFormCheck
                                             type="radio"
-                                            name="visaType"
+                                            name="visa_type"
                                             id="visa-f1"
                                             label="F-1"
                                             value="F-1"
-                                            checked={formData.visaType === "F-1"}
-                                            onChange={(e) => setFormData({ ...formData, visaType: e.target.value })}
+                                            checked={formData.visa_type === "F-1"}
+                                            onChange={(e) => setFormData({ ...formData, visa_type: e.target.value })}
                                         />
                                         <CFormCheck
                                             type="radio"
-                                            name="visaType"
+                                            name="visa_type"
                                             id="visa-j1"
                                             label="J-1"
                                             value="J-1"
-                                            checked={formData.visaType === "J-1"}
-                                            onChange={(e) => setFormData({ ...formData, visaType: e.target.value })}
+                                            checked={formData.visa_type === "J-1"}
+                                            onChange={(e) => setFormData({ ...formData, visa_type: e.target.value })}
                                         />
                                     </div>
                                 </div>
@@ -172,8 +291,8 @@ export default function UCFGlobalExitForm() {
                                     </CFormLabel>
                                     <CFormInput
                                         type="text"
-                                        value={formData.givenName}
-                                        onChange={(e) => setFormData({ ...formData, givenName: e.target.value })}
+                                        value={formData.given_name}
+                                        onChange={(e) => setFormData({ ...formData, given_name: e.target.value })}
                                         required
                                     />
                                 </div>
@@ -188,8 +307,8 @@ export default function UCFGlobalExitForm() {
                                     </CFormLabel>
                                     <CFormInput
                                         type="text"
-                                        value={formData.familyName}
-                                        onChange={(e) => setFormData({ ...formData, familyName: e.target.value })}
+                                        value={formData.family_name}
+                                        onChange={(e) => setFormData({ ...formData, family_name: e.target.value })}
                                         required
                                     />
                                 </div>
@@ -204,8 +323,8 @@ export default function UCFGlobalExitForm() {
                                     </CFormLabel>
                                     <CFormInput
                                         type="text"
-                                        value={formData.usStreetAddress}
-                                        onChange={(e) => setFormData({ ...formData, usStreetAddress: e.target.value })}
+                                        value={formData.us_street_address}
+                                        onChange={(e) => setFormData({ ...formData, us_street_address: e.target.value })}
                                         required
                                     />
                                 </div>
@@ -220,8 +339,8 @@ export default function UCFGlobalExitForm() {
                                     </CFormLabel>
                                     <CFormInput
                                         type="text"
-                                        value={formData.apartmentNumber}
-                                        onChange={(e) => setFormData({ ...formData, apartmentNumber: e.target.value })}
+                                        value={formData.apartment_number}
+                                        onChange={(e) => setFormData({ ...formData, apartment_number: e.target.value })}
                                     />
                                 </div>
                             </CCol>
@@ -274,8 +393,8 @@ export default function UCFGlobalExitForm() {
                                     </CFormLabel>
                                     <CFormInput
                                         type="text"
-                                        value={formData.postalCode}
-                                        onChange={(e) => setFormData({ ...formData, postalCode: e.target.value })}
+                                        value={formData.postal_code}
+                                        onChange={(e) => setFormData({ ...formData, postal_code: e.target.value })}
                                     />
                                 </div>
                             </CCol>
@@ -289,8 +408,8 @@ export default function UCFGlobalExitForm() {
                                     </CFormLabel>
                                     <CFormInput
                                         type="text"
-                                        value={formData.foreignStreetAddress}
-                                        onChange={(e) => setFormData({ ...formData, foreignStreetAddress: e.target.value })}
+                                        value={formData.foreign_street_address}
+                                        onChange={(e) => setFormData({ ...formData, foreign_street_address: e.target.value })}
                                         required
                                     />
                                 </div>
@@ -305,8 +424,8 @@ export default function UCFGlobalExitForm() {
                                     </CFormLabel>
                                     <CFormInput
                                         type="text"
-                                        value={formData.foreignCity}
-                                        onChange={(e) => setFormData({ ...formData, foreignCity: e.target.value })}
+                                        value={formData.foreign_city}
+                                        onChange={(e) => setFormData({ ...formData, foreign_city: e.target.value })}
                                         required
                                     />
                                 </div>
@@ -321,8 +440,8 @@ export default function UCFGlobalExitForm() {
                                     </CFormLabel>
                                     <CFormInput
                                         type="text"
-                                        value={formData.foreignPostalCode}
-                                        onChange={(e) => setFormData({ ...formData, foreignPostalCode: e.target.value })}
+                                        value={formData.foreign_postal_code}
+                                        onChange={(e) => setFormData({ ...formData, foreign_postal_code: e.target.value })}
                                     />
                                 </div>
                             </CCol>
@@ -346,6 +465,7 @@ export default function UCFGlobalExitForm() {
                                         <option value="China">China</option>
                                         <option value="India">India</option>
                                         <option value="United Kingdom">United Kingdom</option>
+                                        <option value="Colombia">Colombia</option>
                                     </CFormSelect>
                                 </div>
                             </CCol>
@@ -359,8 +479,8 @@ export default function UCFGlobalExitForm() {
                                     </CFormLabel>
                                     <CFormInput
                                         type="email"
-                                        value={formData.ucfEmail}
-                                        onChange={(e) => setFormData({ ...formData, ucfEmail: e.target.value })}
+                                        value={formData.ucf_email}
+                                        onChange={(e) => setFormData({ ...formData, ucf_email: e.target.value })}
                                         required
                                     />
                                 </div>
@@ -375,8 +495,8 @@ export default function UCFGlobalExitForm() {
                                     </CFormLabel>
                                     <CFormInput
                                         type="email"
-                                        value={formData.secondaryEmail}
-                                        onChange={(e) => setFormData({ ...formData, secondaryEmail: e.target.value })}
+                                        value={formData.secondary_email}
+                                        onChange={(e) => setFormData({ ...formData, secondary_email: e.target.value })}
                                         required
                                     />
                                 </div>
@@ -391,8 +511,8 @@ export default function UCFGlobalExitForm() {
                                     </CFormLabel>
                                     <CFormInput
                                         type="tel"
-                                        value={formData.usTelephone}
-                                        onChange={(e) => setFormData({ ...formData, usTelephone: e.target.value })}
+                                        value={formData.us_telephone}
+                                        onChange={(e) => setFormData({ ...formData, us_telephone: e.target.value })}
                                         required
                                     />
                                 </div>
@@ -407,8 +527,8 @@ export default function UCFGlobalExitForm() {
                                     </CFormLabel>
                                     <CFormInput
                                         type="tel"
-                                        value={formData.foreignTelephone}
-                                        onChange={(e) => setFormData({ ...formData, foreignTelephone: e.target.value })}
+                                        value={formData.foreign_telephone}
+                                        onChange={(e) => setFormData({ ...formData, foreign_telephone: e.target.value })}
                                         required
                                     />
                                 </div>
@@ -427,8 +547,8 @@ export default function UCFGlobalExitForm() {
                                         UCF Education Level:
                                     </CFormLabel>
                                     <CFormSelect
-                                        value={formData.educationLevel}
-                                        onChange={(e) => setFormData({ ...formData, educationLevel: e.target.value })}
+                                        value={formData.education_level}
+                                        onChange={(e) => setFormData({ ...formData, education_level: e.target.value })}
                                         required
                                     >
                                         <option value="">Select One</option>
@@ -450,21 +570,21 @@ export default function UCFGlobalExitForm() {
                                     <div className="d-flex gap-3">
                                         <CFormCheck
                                             type="radio"
-                                            name="employedOnCampus"
+                                            name="employed_on_campus"
                                             id="employed-yes"
                                             label="Yes"
                                             value="yes"
-                                            checked={formData.employedOnCampus === "yes"}
-                                            onChange={(e) => setFormData({ ...formData, employedOnCampus: e.target.value })}
+                                            checked={formData.employed_on_campus === "yes"}
+                                            onChange={(e) => setFormData({ ...formData, employed_on_campus: e.target.value })}
                                         />
                                         <CFormCheck
                                             type="radio"
-                                            name="employedOnCampus"
+                                            name="employed_on_campus"
                                             id="employed-no"
                                             label="No"
                                             value="no"
-                                            checked={formData.employedOnCampus === "no"}
-                                            onChange={(e) => setFormData({ ...formData, employedOnCampus: e.target.value })}
+                                            checked={formData.employed_on_campus === "no"}
+                                            onChange={(e) => setFormData({ ...formData, employed_on_campus: e.target.value })}
                                         />
                                     </div>
                                 </div>
@@ -482,8 +602,8 @@ export default function UCFGlobalExitForm() {
                                     </CFormLabel>
                                     <CFormInput
                                         type="date"
-                                        value={formData.departureDate}
-                                        onChange={(e) => setFormData({ ...formData, departureDate: e.target.value })}
+                                        value={formData.departure_date}
+                                        onChange={(e) => setFormData({ ...formData, departure_date: e.target.value })}
                                         required
                                     />
                                 </div>
@@ -517,34 +637,34 @@ export default function UCFGlobalExitForm() {
                                     <div className="mb-2">
                                         <CFormCheck
                                             type="radio"
-                                            name="departureReason"
+                                            name="departure_reason"
                                             id="reason-temporary"
                                             label="I am taking a temporary leave of absence and departing the United States."
                                             value="temporary"
-                                            checked={formData.departureReason === "temporary"}
-                                            onChange={(e) => setFormData({ ...formData, departureReason: e.target.value })}
+                                            checked={formData.departure_reason === "Completing my graduate studies and returning home"}
+                                            onChange={(e) => setFormData({ ...formData, departure_reason: "Completing my graduate studies and returning home" })}
                                         />
                                     </div>
                                     <div className="mb-2">
                                         <CFormCheck
                                             type="radio"
-                                            name="departureReason"
+                                            name="departure_reason"
                                             id="reason-discontinuing"
                                             label="I am discontinuing my studies and am permanently departing the United States."
                                             value="discontinuing"
-                                            checked={formData.departureReason === "discontinuing"}
-                                            onChange={(e) => setFormData({ ...formData, departureReason: e.target.value })}
+                                            checked={formData.departure_reason === "Discontinuing my studies and returning home"}
+                                            onChange={(e) => setFormData({ ...formData, departure_reason: "Discontinuing my studies and returning home" })}
                                         />
                                     </div>
                                     <div>
                                         <CFormCheck
                                             type="radio"
-                                            name="departureReason"
+                                            name="departure_reason"
                                             id="reason-completed"
                                             label="I have completed my program and am permanently departing the United States."
                                             value="completed"
-                                            checked={formData.departureReason === "completed"}
-                                            onChange={(e) => setFormData({ ...formData, departureReason: e.target.value })}
+                                            checked={formData.departure_reason === "Completed my program and returning home"}
+                                            onChange={(e) => setFormData({ ...formData, departure_reason: "Completed my program and returning home" })}
                                         />
                                     </div>
                                 </div>
@@ -560,24 +680,24 @@ export default function UCFGlobalExitForm() {
                                     <CFormCheck
                                         id="work-authorization"
                                         label="If I am working on-campus at the University of Central Florida, I understand that my work authorization ends on the date my SEVIS record is terminated that I must notify my supervisor and the Human Resources Business Center of my upcoming departure from the United States."
-                                        checked={formData.workAuthorizationAcknowledgment}
-                                        onChange={(e) => setFormData({ ...formData, workAuthorizationAcknowledgment: e.target.checked })}
+                                        checked={formData.work_authorization_acknowledgment}
+                                        onChange={(e) => setFormData({ ...formData, work_authorization_acknowledgment: e.target.checked })}
                                     />
                                 </div>
                                 <div className="mb-3">
                                     <CFormCheck
                                         id="cpt-opt"
                                         label="I understand that taking a leave of absence from the University of Central Florida can either delay or deny my eligibility for Curricular Practical Training (CPT) or Optional Practical Training (OPT)."
-                                        checked={formData.cptOptAcknowledgment}
-                                        onChange={(e) => setFormData({ ...formData, cptOptAcknowledgment: e.target.checked })}
+                                        checked={formData.cpt_opt_acknowledgment}
+                                        onChange={(e) => setFormData({ ...formData, cpt_opt_acknowledgment: e.target.checked })}
                                     />
                                 </div>
                                 <div className="mb-3">
                                     <CFormCheck
                                         id="financial-obligations"
                                         label="I understand I am responsible for resolving any outstanding financial obligations with the University of Central Florida, even after my exit from the United States."
-                                        checked={formData.financialObligationsAcknowledgment}
-                                        onChange={(e) => setFormData({ ...formData, financialObligationsAcknowledgment: e.target.checked })}
+                                        checked={formData.financial_obligations_acknowledgment}
+                                        onChange={(e) => setFormData({ ...formData, financial_obligations_acknowledgment: e.target.checked })}
                                     />
                                 </div>
                             </CCol>
@@ -596,10 +716,27 @@ export default function UCFGlobalExitForm() {
 
                         {/* Action Buttons */}
                         <div className="d-flex gap-2">
-                            <CButton type="submit" color="success" className="text-white">
-                                Submit
+                            <CButton
+                                type="submit"
+                                color="success"
+                                className="text-white"
+                                disabled={isSubmitting}
+                            >
+                                {isSubmitting ? (
+                                    <>
+                                        <CSpinner size="sm" className="me-2" />
+                                        Submitting...
+                                    </>
+                                ) : (
+                                    'Submit'
+                                )}
                             </CButton>
-                            <CButton type="button" color="danger" className="text-white">
+                            <CButton
+                                type="button"
+                                color="danger"
+                                className="text-white"
+                                onClick={() => navigate('/forms/all-requests')}
+                            >
                                 Cancel Changes
                             </CButton>
                         </div>

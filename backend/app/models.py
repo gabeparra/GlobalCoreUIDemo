@@ -1,7 +1,5 @@
 from sqlalchemy import Column, Integer, String, DateTime, Boolean, JSON, Text
-from sqlalchemy.ext.declarative import declarative_base
-
-Base = declarative_base()
+from app.database import Base
 
 class I20Request(Base):
     __tablename__ = "i20_requests"
@@ -124,6 +122,96 @@ class OffCampusHousingRequest(Base):
     student_name = Column(String, index=True)
     student_id = Column(String, index=True)
     program = Column(String, default="Off Campus Housing Application")
+    submission_date = Column(DateTime)
+    status = Column(String, default="pending")
+    
+    # Store all form data as JSON
+    form_data = Column(JSON, nullable=True)
+
+class FloridaStatute101035Request(Base):
+    __tablename__ = "florida_statute_101035_requests"
+
+    id = Column(Integer, primary_key=True, index=True)
+    
+    # Required basic fields
+    student_name = Column(String, index=True)
+    student_id = Column(String, index=True)
+    program = Column(String, default="Florida Statute 1010.35")
+    submission_date = Column(DateTime)
+    status = Column(String, default="pending")
+    
+    # Store all form data as JSON
+    form_data = Column(JSON, nullable=True)
+
+class LeaveRequest(Base):
+    __tablename__ = "leave_requests"
+
+    id = Column(Integer, primary_key=True, index=True)
+    
+    # Required basic fields
+    student_name = Column(String, index=True)
+    student_id = Column(String, index=True)
+    program = Column(String, default="Leave Request")
+    submission_date = Column(DateTime)
+    status = Column(String, default="pending")
+    
+    # Store all form data as JSON
+    form_data = Column(JSON, nullable=True)
+
+class OptStemExtensionReport(Base):
+    __tablename__ = "opt_stem_extension_reports"
+
+    id = Column(Integer, primary_key=True, index=True)
+    
+    # Required basic fields
+    student_name = Column(String, index=True)
+    student_id = Column(String, index=True)
+    program = Column(String, default="OPT STEM Extension Reporting")
+    submission_date = Column(DateTime)
+    status = Column(String, default="pending")
+    
+    # Store all form data as JSON
+    form_data = Column(JSON, nullable=True)
+
+class OptStemExtensionApplication(Base):
+    __tablename__ = "opt_stem_extension_applications"
+
+    id = Column(Integer, primary_key=True, index=True)
+    
+    # Required basic fields
+    student_name = Column(String, index=True)
+    student_id = Column(String, index=True)
+    program = Column(String, default="OPT STEM Extension Application")
+    submission_date = Column(DateTime)
+    status = Column(String, default="pending")
+    
+    # Store all form data as JSON
+    form_data = Column(JSON, nullable=True)
+
+class ExitForm(Base):
+    __tablename__ = "exit_forms"
+
+    id = Column(Integer, primary_key=True, index=True)
+    
+    # Required basic fields
+    student_name = Column(String, index=True)
+    student_id = Column(String, index=True)
+    program = Column(String, default="Exit Form")
+    submission_date = Column(DateTime)
+    status = Column(String, default="pending")
+    
+    # Store all form data as JSON
+    form_data = Column(JSON, nullable=True)
+
+class PathwayProgramsIntentToProgress(Base):
+    __tablename__ = "pathway_programs_intent_to_progress"
+
+    id = Column(Integer, primary_key=True, index=True)
+    
+    # Required basic fields
+    student_name = Column(String, index=True)
+    student_id = Column(String, index=True)
+    program = Column(String, default="Pathway Programs Intent to Progress")
     submission_date = Column(DateTime)
     status = Column(String, default="pending")
     

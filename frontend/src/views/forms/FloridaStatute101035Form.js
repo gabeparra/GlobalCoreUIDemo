@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { useNavigate } from "react-router-dom"
 import "@coreui/coreui/dist/css/coreui.min.css"
 import {
     CForm,
@@ -13,9 +14,12 @@ import {
     CCard,
     CCardBody,
     CCardHeader,
+    CAlert,
+    CSpinner,
 } from "@coreui/react"
 
 export default function FloridaStatute101035Form() {
+    const navigate = useNavigate()
     const [formData, setFormData] = useState({
         ucfId: import.meta.env.VITE_PLACEHOLDER_UCF_ID || "",
         firstName: import.meta.env.VITE_PLACEHOLDER_GIVEN_NAME || "",
@@ -24,23 +28,83 @@ export default function FloridaStatute101035Form() {
         telephoneNumber: import.meta.env.VITE_PLACEHOLDER_US_TELEPHONE || "",
         emailAddress: import.meta.env.VITE_PLACEHOLDER_STUDENT_EMAIL || "",
         sevisNumber: import.meta.env.VITE_PLACEHOLDER_SEVIS_ID || "",
-        college: "College of Arts and Humanities",
+        college: "college-of-arts-and-humanities",
         department: "Department of English",
         position: "Professor",
         hasPassport: "yes",
         hasDS160: "yes",
         passportDocument: null,
     })
+    const [isSubmitting, setIsSubmitting] = useState(false)
+    const [submitSuccess, setSubmitSuccess] = useState(false)
+    const [submitError, setSubmitError] = useState(null)
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault()
-        console.log("Form submitted:", formData)
-        // Add submission logic here
+        setIsSubmitting(true)
+        setSubmitError(null)
+        setSubmitSuccess(false)
+
+        try {
+            // Validate required fields
+            if (!formData.ucfId || !formData.firstName || !formData.lastName || !formData.dateOfBirth ||
+                !formData.telephoneNumber || !formData.emailAddress || !formData.college ||
+                !formData.department || !formData.position || !formData.hasPassport || !formData.hasDS160) {
+                throw new Error('Please fill in all required fields')
+            }
+
+            // Create FormData for file upload
+            const submitData = new FormData()
+
+            // Convert camelCase to snake_case for backend
+            submitData.append('ucf_id', formData.ucfId)
+            submitData.append('first_name', formData.firstName)
+            submitData.append('last_name', formData.lastName)
+            submitData.append('date_of_birth', formData.dateOfBirth)
+            submitData.append('telephone_number', formData.telephoneNumber)
+            submitData.append('email_address', formData.emailAddress)
+            submitData.append('sevis_number', formData.sevisNumber || '')
+            submitData.append('college', formData.college)
+            submitData.append('department', formData.department)
+            submitData.append('position', formData.position)
+            submitData.append('has_passport', formData.hasPassport)
+            submitData.append('has_ds160', formData.hasDS160)
+
+            // Add passport document if provided
+            if (formData.passportDocument) {
+                submitData.append('passport_document', formData.passportDocument)
+            }
+
+            const response = await fetch('http://localhost:8000/api/florida-statute-101035/', {
+                method: 'POST',
+                body: submitData
+            })
+
+            if (!response.ok) {
+                const errorData = await response.json()
+                throw new Error(errorData.detail || `HTTP error! Status: ${response.status}`)
+            }
+
+            const result = await response.json()
+            console.log('Florida Statute 1010.35 request submitted successfully:', result)
+
+            setSubmitSuccess(true)
+
+            // Redirect to AllRequestsList after 2 seconds
+            setTimeout(() => {
+                navigate('/forms/all-requests')
+            }, 2000)
+
+        } catch (error) {
+            console.error('Error submitting Florida Statute 1010.35 request:', error)
+            setSubmitError(error.message)
+        } finally {
+            setIsSubmitting(false)
+        }
     }
 
     const handleCancel = () => {
-        console.log("Changes cancelled")
-        // Reset form or navigate away
+        navigate('/')
     }
 
     const handleFileUpload = (e) => {
@@ -89,6 +153,19 @@ export default function FloridaStatute101035Form() {
                     </div>
 
                     <CForm onSubmit={handleSubmit}>
+                        {/* Success/Error Messages */}
+                        {submitSuccess && (
+                            <CAlert color="success" className="mb-4">
+                                <strong>Success!</strong> Your Florida Statute 1010.35 request has been submitted successfully. Redirecting to All Requests...
+                            </CAlert>
+                        )}
+
+                        {submitError && (
+                            <CAlert color="danger" className="mb-4">
+                                <strong>Error:</strong> {submitError}
+                            </CAlert>
+                        )}
+
                         {/* Contact Information Section */}
                         <CCard className="mb-4">
                             <CCardHeader className="bg-warning text-dark">
@@ -374,10 +451,30 @@ export default function FloridaStatute101035Form() {
 
                         {/* Action Buttons */}
                         <div className="d-flex gap-2">
-                            <CButton type="submit" color="success" className="text-white">
-                                <span className="me-2">✓</span>Submit
+                            <CButton
+                                type="submit"
+                                color="success"
+                                className="text-white"
+                                disabled={isSubmitting}
+                            >
+                                {isSubmitting ? (
+                                    <>
+                                        <CSpinner size="sm" className="me-2" />
+                                        Submitting...
+                                    </>
+                                ) : (
+                                    <>
+                                        <span className="me-2">✓</span>Submit
+                                    </>
+                                )}
                             </CButton>
-                            <CButton type="button" color="danger" onClick={handleCancel} className="text-white">
+                            <CButton
+                                type="button"
+                                color="danger"
+                                onClick={handleCancel}
+                                className="text-white"
+                                disabled={isSubmitting}
+                            >
                                 <span className="me-2">✕</span>Cancel Changes
                             </CButton>
                         </div>

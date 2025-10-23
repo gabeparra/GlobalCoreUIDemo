@@ -83,9 +83,15 @@ export default function LandingPage() {
             path: '/forms/opt-stem-reporting'
         },
         {
+            title: 'OPT STEM Extension Application',
+            description: 'Submit your OPT STEM Extension application with all required documents and information.',
+            icon: '📋',
+            path: '/forms/opt-stem-extension-application'
+        },
+        {
             title: 'Exit Form',
-            description: 'Request to exit the UCF Global program.',
-            icon: '📝',
+            description: 'Submit your exit form when leaving the University of Central Florida.',
+            icon: '🚪',
             path: '/forms/exit'
         },
         {

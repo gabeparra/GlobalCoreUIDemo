@@ -447,3 +447,321 @@ class OffCampusHousingRequest(OffCampusHousingRequestBase):
     class Config:
         from_attributes = True
         populate_by_name = True
+
+class FloridaStatute101035RequestBase(BaseModel):
+    # Required basic fields
+    student_name: str
+    student_id: str
+    program: str
+    
+    # Personal information
+    ucf_id: Optional[str] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    date_of_birth: Optional[str] = None
+    telephone_number: Optional[str] = None
+    email_address: Optional[str] = None
+    sevis_number: Optional[str] = None
+    
+    # University information
+    college: Optional[str] = None
+    department: Optional[str] = None
+    position: Optional[str] = None
+    
+    # Immigration information
+    has_passport: Optional[str] = None
+    has_ds160: Optional[str] = None
+    
+    # Document paths (for file uploads)
+    passport_document_path: Optional[str] = None
+
+class FloridaStatute101035RequestCreate(FloridaStatute101035RequestBase):
+    pass
+
+class FloridaStatute101035Request(FloridaStatute101035RequestBase):
+    id: int
+    submission_date: datetime
+    status: str
+    form_data: Optional[Dict[str, Any]] = None
+
+    class Config:
+        from_attributes = True
+        populate_by_name = True
+
+class LeaveRequestBase(BaseModel):
+    # Required basic fields
+    student_name: str
+    student_id: str
+    program: str
+    
+    # Leave information
+    leave_type: Optional[str] = None
+    from_date: Optional[str] = None
+    from_time: Optional[str] = None
+    to_date: Optional[str] = None
+    to_time: Optional[str] = None
+    hours_requested: Optional[float] = None
+    reason: Optional[str] = None
+    
+    # Faculty information
+    course_name: Optional[str] = None
+    
+    # Documentation path (for file upload)
+    documentation_path: Optional[str] = None
+
+class LeaveRequestCreate(LeaveRequestBase):
+    pass
+
+class LeaveRequest(LeaveRequestBase):
+    id: int
+    submission_date: datetime
+    status: str
+    form_data: Optional[Dict[str, Any]] = None
+
+    class Config:
+        from_attributes = True
+        populate_by_name = True
+
+class OptStemExtensionReportBase(BaseModel):
+    # Required basic fields
+    student_name: str
+    student_id: str
+    program: str
+    
+    # Personal Information
+    ucf_id: Optional[str] = None
+    sevis_id: Optional[str] = None
+    given_name: Optional[str] = None
+    family_name: Optional[str] = None
+    street_address: Optional[str] = None
+    apartment_number: Optional[str] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
+    postal_code: Optional[str] = None
+    ucf_email_address: Optional[str] = None
+    secondary_email_address: Optional[str] = None
+    us_telephone_number: Optional[str] = None
+    
+    # Employment Authorization
+    standard_opt: Optional[bool] = False
+    stem_extension: Optional[bool] = False
+
+class OptStemExtensionReportCreate(OptStemExtensionReportBase):
+    pass
+
+class OptStemExtensionReport(OptStemExtensionReportBase):
+    id: int
+    submission_date: datetime
+    status: str
+    form_data: Optional[Dict[str, Any]] = None
+
+    class Config:
+        from_attributes = True
+        populate_by_name = True
+
+class OptStemExtensionApplicationBase(BaseModel):
+    # Required basic fields
+    student_name: str
+    student_id: str
+    program: str
+    
+    # Contact Information
+    ucf_id: Optional[str] = None
+    given_name: Optional[str] = None
+    family_name: Optional[str] = None
+    date_of_birth: Optional[str] = None
+    gender: Optional[str] = None
+    country_of_citizenship: Optional[str] = None
+    academic_level: Optional[str] = None
+    academic_program: Optional[str] = None
+    
+    # Current U.S. Mailing Address
+    address: Optional[str] = None
+    address_2: Optional[str] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
+    postal_code: Optional[str] = None
+    ucf_email_address: Optional[str] = None
+    secondary_email_address: Optional[str] = None
+    telephone_number: Optional[str] = None
+    
+    # Employment Information
+    job_title: Optional[str] = None
+    employer_name: Optional[str] = None
+    employer_ein: Optional[str] = None
+    employment_street_address: Optional[str] = None
+    employment_city: Optional[str] = None
+    employment_state: Optional[str] = None
+    employment_postal_code: Optional[str] = None
+    supervisor_first_name: Optional[str] = None
+    supervisor_last_name: Optional[str] = None
+    supervisor_email: Optional[str] = None
+    supervisor_telephone: Optional[str] = None
+    hours_per_week: Optional[str] = None
+    is_paid_position: Optional[bool] = None
+    is_staffing_firm: Optional[bool] = None
+    has_e_verify: Optional[bool] = None
+    
+    # Additional Information
+    based_on_previous_stem_degree: Optional[bool] = None
+    
+    # Document paths (all optional for testing)
+    photo_2x2_path: Optional[str] = None
+    form_i983_path: Optional[str] = None
+    passport_path: Optional[str] = None
+    f1_visa_path: Optional[str] = None
+    i94_path: Optional[str] = None
+    ead_card_path: Optional[str] = None
+    form_i765_path: Optional[str] = None
+    form_g1145_path: Optional[str] = None
+    diploma_path: Optional[str] = None
+    transcripts_path: Optional[str] = None
+    previous_i20s_path: Optional[str] = None
+    
+    # Statements of Agreement
+    completed_stem_workshop: Optional[bool] = None
+    provide_ead_copy: Optional[bool] = None
+    understand_unemployment_limits: Optional[bool] = None
+    notify_changes: Optional[bool] = None
+    submit_updated_i983: Optional[bool] = None
+    comply_reporting_requirements: Optional[bool] = None
+    reviewed_photo_requirements: Optional[bool] = None
+    reviewed_fee_payment: Optional[bool] = None
+
+class OptStemExtensionApplicationCreate(OptStemExtensionApplicationBase):
+    pass
+
+class OptStemExtensionApplication(OptStemExtensionApplicationBase):
+    id: int
+    submission_date: datetime
+    status: str
+    form_data: Optional[Dict[str, Any]] = None
+
+    class Config:
+        from_attributes = True
+        populate_by_name = True
+
+class ExitFormBase(BaseModel):
+    # Biographical Information
+    ucf_id: str
+    sevis_id: Optional[str] = None
+    visa_type: Optional[str] = None
+    given_name: str
+    family_name: str
+    
+    # U.S. Address
+    us_street_address: Optional[str] = None
+    apartment_number: Optional[str] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
+    postal_code: Optional[str] = None
+    
+    # Foreign Address
+    foreign_street_address: Optional[str] = None
+    foreign_city: Optional[str] = None
+    foreign_postal_code: Optional[str] = None
+    country: Optional[str] = None
+    
+    # Contact Information
+    ucf_email: str
+    secondary_email: Optional[str] = None
+    us_telephone: Optional[str] = None
+    foreign_telephone: Optional[str] = None
+    
+    # Current Academic Information
+    education_level: Optional[str] = None
+    employed_on_campus: Optional[str] = None
+    
+    # Departure Information
+    departure_date: Optional[str] = None
+    flight_itinerary: Optional[str] = None
+    departure_reason: Optional[str] = None
+    
+    # Statements of Agreement
+    work_authorization_acknowledgment: Optional[bool] = None
+    cpt_opt_acknowledgment: Optional[bool] = None
+    financial_obligations_acknowledgment: Optional[bool] = None
+    remarks: Optional[str] = None
+
+class ExitFormCreate(ExitFormBase):
+    pass
+
+class ExitForm(BaseModel):
+    id: int
+    student_name: str
+    student_id: str
+    program: str
+    submission_date: datetime
+    status: str
+    form_data: Optional[Dict[str, Any]] = None
+
+    class Config:
+        from_attributes = True
+        populate_by_name = True
+
+class PathwayProgramsIntentToProgressBase(BaseModel):
+    # Student Information
+    ucf_id: Optional[str] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    date_of_birth: Optional[str] = None
+    ethnicity: Optional[str] = None
+    
+    # Permanent Address
+    street_address: Optional[str] = None
+    state: Optional[str] = None
+    city: Optional[str] = None
+    postal_code: Optional[str] = None
+    country: Optional[str] = None
+    
+    # UCF Global Program
+    ucf_global_program: Optional[str] = None
+    
+    # Emergency Contact
+    emergency_contact_name: Optional[str] = None
+    emergency_contact_relationship: Optional[str] = None
+    emergency_contact_street_address: Optional[str] = None
+    emergency_contact_city: Optional[str] = None
+    emergency_contact_state: Optional[str] = None
+    emergency_contact_postal_code: Optional[str] = None
+    emergency_contact_country: Optional[str] = None
+    emergency_contact_phone: Optional[str] = None
+    
+    # Application Information
+    expected_progression_term: Optional[str] = None
+    academic_credits_earned: Optional[str] = None
+    intended_major: Optional[str] = None
+    has_accelerated_credits: Optional[bool] = None
+    
+    # Post-Secondary Information
+    attended_other_institutions: Optional[bool] = None
+    
+    # College Entrance Exams
+    sat_total_score: Optional[str] = None
+    sat_date_taken: Optional[str] = None
+    act_total_score: Optional[str] = None
+    act_date_taken: Optional[str] = None
+    
+    # Crime/Disciplinary Questions
+    disciplinary_action: Optional[bool] = None
+    felony_conviction: Optional[bool] = None
+    criminal_proceedings: Optional[bool] = None
+    
+    # Disclaimer
+    certification: Optional[bool] = None
+
+class PathwayProgramsIntentToProgressCreate(PathwayProgramsIntentToProgressBase):
+    pass
+
+class PathwayProgramsIntentToProgress(BaseModel):
+    id: int
+    student_name: str
+    student_id: str
+    program: str
+    submission_date: datetime
+    status: str
+    form_data: Optional[Dict[str, Any]] = None
+
+    class Config:
+        from_attributes = True
+        populate_by_name = True

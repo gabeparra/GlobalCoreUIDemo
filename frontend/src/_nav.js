@@ -90,6 +90,12 @@ const _nav = [
       },
       {
         component: CNavItem,
+        name: 'OPT STEM Extension Application',
+        to: '/forms/opt-stem-extension-application',
+        icon: <CIcon icon={cilPencil} customClassName="nav-icon" />,
+      },
+      {
+        component: CNavItem,
         name: 'Exit Form',
         to: '/forms/exit',
         icon: <CIcon icon={cilPencil} customClassName="nav-icon" />,

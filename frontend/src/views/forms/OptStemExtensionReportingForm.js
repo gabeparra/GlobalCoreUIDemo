@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { useNavigate } from "react-router-dom"
 import "@coreui/coreui/dist/css/coreui.min.css"
 import {
     CForm,
@@ -13,30 +14,96 @@ import {
     CCard,
     CCardBody,
     CCardHeader,
+    CAlert,
+    CSpinner,
 } from "@coreui/react"
 
 export default function OptStemExtensionReportingForm() {
+    const navigate = useNavigate()
+
     const [formData, setFormData] = useState({
-        ucfId: import.meta.env.VITE_PLACEHOLDER_UCF_ID || "",
-        sevisId: import.meta.env.VITE_PLACEHOLDER_SEVIS_ID || "",
-        givenName: import.meta.env.VITE_PLACEHOLDER_GIVEN_NAME || "",
-        familyName: import.meta.env.VITE_PLACEHOLDER_FAMILY_NAME || "",
-        streetAddress: import.meta.env.VITE_PLACEHOLDER_STREET_ADDRESS || "",
-        apartmentNumber: "",
-        city: import.meta.env.VITE_PLACEHOLDER_CITY || "",
-        state: import.meta.env.VITE_PLACEHOLDER_STATE || "",
-        postalCode: import.meta.env.VITE_PLACEHOLDER_POSTAL_CODE || "",
-        ucfEmailAddress: import.meta.env.VITE_PLACEHOLDER_STUDENT_EMAIL || "",
-        secondaryEmailAddress: import.meta.env.VITE_PLACEHOLDER_SECONDARY_EMAIL || "",
-        usTelephoneNumber: "",
-        standardOpt: false,
+        ucfId: import.meta.env.VITE_PLACEHOLDER_UCF_ID || "1234567",
+        sevisId: import.meta.env.VITE_PLACEHOLDER_SEVIS_ID || "N1234567890",
+        givenName: import.meta.env.VITE_PLACEHOLDER_GIVEN_NAME || "John",
+        familyName: import.meta.env.VITE_PLACEHOLDER_FAMILY_NAME || "Doe",
+        streetAddress: import.meta.env.VITE_PLACEHOLDER_STREET_ADDRESS || "123 University Blvd",
+        apartmentNumber: "101",
+        city: import.meta.env.VITE_PLACEHOLDER_CITY || "Orlando",
+        state: import.meta.env.VITE_PLACEHOLDER_STATE || "Florida",
+        postalCode: import.meta.env.VITE_PLACEHOLDER_POSTAL_CODE || "32816",
+        ucfEmailAddress: import.meta.env.VITE_PLACEHOLDER_STUDENT_EMAIL || "john.doe@ucf.edu",
+        secondaryEmailAddress: import.meta.env.VITE_PLACEHOLDER_SECONDARY_EMAIL || "john@example.com",
+        usTelephoneNumber: "+1-407-555-0100",
+        standardOpt: true,
         stemExtension: false,
     })
 
-    const handleSubmit = (e) => {
+    const [isSubmitting, setIsSubmitting] = useState(false)
+    const [submitError, setSubmitError] = useState(null)
+    const [submitSuccess, setSubmitSuccess] = useState(false)
+
+    const handleSubmit = async (e) => {
         e.preventDefault()
-        console.log("Form submitted:", formData)
-        // Add submission logic here
+        setIsSubmitting(true)
+        setSubmitError(null)
+        setSubmitSuccess(false)
+
+        try {
+            // Validate required fields
+            if (!formData.ucfId || !formData.sevisId || !formData.givenName || !formData.familyName) {
+                throw new Error('Please fill in all required fields')
+            }
+
+            // Prepare payload for backend
+            const payload = {
+                student_name: `${formData.givenName} ${formData.familyName}`,
+                student_id: formData.ucfId,
+                program: 'OPT STEM Extension Reporting',
+                ucf_id: formData.ucfId,
+                sevis_id: formData.sevisId,
+                given_name: formData.givenName,
+                family_name: formData.familyName,
+                street_address: formData.streetAddress,
+                apartment_number: formData.apartmentNumber,
+                city: formData.city,
+                state: formData.state,
+                postal_code: formData.postalCode,
+                ucf_email_address: formData.ucfEmailAddress,
+                secondary_email_address: formData.secondaryEmailAddress,
+                us_telephone_number: formData.usTelephoneNumber,
+                standard_opt: formData.standardOpt,
+                stem_extension: formData.stemExtension
+            }
+
+            // Submit to backend
+            const response = await fetch('http://localhost:8000/api/opt-stem-reports/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload),
+            })
+
+            if (!response.ok) {
+                const errorData = await response.json()
+                throw new Error(errorData.detail || 'Failed to submit OPT STEM Extension report')
+            }
+
+            const result = await response.json()
+            console.log('OPT STEM Extension report submitted successfully:', result)
+            setSubmitSuccess(true)
+
+            // Redirect to All Requests List after 2 seconds
+            setTimeout(() => {
+                navigate('/forms/all-requests')
+            }, 2000)
+
+        } catch (error) {
+            console.error('Error submitting OPT STEM Extension report:', error)
+            setSubmitError(error.message)
+        } finally {
+            setIsSubmitting(false)
+        }
     }
 
     const handleCancel = () => {
@@ -79,6 +146,17 @@ export default function OptStemExtensionReportingForm() {
                     </div>
 
                     <CForm onSubmit={handleSubmit}>
+                        {/* Success/Error Messages */}
+                        {submitSuccess && (
+                            <CAlert color="success" className="mb-4">
+                                ✓ OPT STEM Extension report submitted successfully! Redirecting to all requests...
+                            </CAlert>
+                        )}
+                        {submitError && (
+                            <CAlert color="danger" className="mb-4">
+                                ✕ {submitError}
+                            </CAlert>
+                        )}
                         <CRow>
                             {/* Personal Information Section */}
                             <CCol md={6}>
@@ -341,10 +419,19 @@ export default function OptStemExtensionReportingForm() {
 
                         {/* Action Buttons */}
                         <div className="d-flex gap-2">
-                            <CButton type="submit" color="success" className="text-white">
-                                <span className="me-2">✓</span>Submit Report
+                            <CButton type="submit" color="success" className="text-white" disabled={isSubmitting}>
+                                {isSubmitting ? (
+                                    <>
+                                        <CSpinner size="sm" className="me-2" />
+                                        Submitting...
+                                    </>
+                                ) : (
+                                    <>
+                                        <span className="me-2">✓</span>Submit Report
+                                    </>
+                                )}
                             </CButton>
-                            <CButton type="button" color="danger" onClick={handleCancel} className="text-white">
+                            <CButton type="button" color="danger" onClick={handleCancel} className="text-white" disabled={isSubmitting}>
                                 <span className="me-2">✕</span>Cancel Changes
                             </CButton>
                         </div>
