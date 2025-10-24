@@ -2362,3 +2362,4 @@ def delete_all_global_transfer_out_requests(db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=f"Error deleting Global Transfer Out Requests: {str(e)}")
     
     
+# TRAVEL APPROVAL PETITION ROUTES

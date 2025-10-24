@@ -26,6 +26,7 @@ const LinkagesApplicationForm = lazy(() => import('./views/forms/LinkagesApplica
 const ReducedCourseLoadRequestForm = lazy(() => import('./views/forms/ReducedCourseLoadRequestForm'))
 const SpeakTestRegistrationForm = lazy(() => import('./views/forms/SpeakTestRegistrationForm'))
 const GlobalTransferOutForm = lazy(() => import('./views/forms/GlobalTransferOutForm'))
+const TravelApprovalPetitionForm = lazy(() => import('./views/forms/TravelApprovalPetitionForm'))
 
 const routes = [
   { path: '/', exact: true, name: 'Home', element: LandingPage },
@@ -49,7 +50,8 @@ const routes = [
   { path: '/forms/linkages-application', name: 'Linkages Application', element: LinkagesApplicationForm },
   { path: '/forms/reduced-course-load', name: 'Reduced Course Load Request', element: ReducedCourseLoadRequestForm },
   { path: '/forms/speak-test-registration', name: 'SPEAK Test Registration', element: SpeakTestRegistrationForm },
-  { path: '/forms/global-transfer-out', name: 'Global Transfer Out', element: GlobalTransferOutForm }
+  { path: '/forms/global-transfer-out', name: 'Global Transfer Out', element: GlobalTransferOutForm },
+  { path: '/forms/travel-approval-petition', name: 'Travel Approval Petition', element: TravelApprovalPetitionForm }
 ]
 
 export default routes

@@ -136,6 +136,12 @@ const _nav = [
         to: '/forms/global-transfer-out',
         icon: <CIcon icon={cilPencil} customClassName="nav-icon" />,
       },
+      {
+        component: CNavItem,
+        name: 'Travel Approval Petition',
+        to: '/forms/travel-approval-petition',
+        icon: <CIcon icon={cilPencil} customClassName="nav-icon" />,
+      },
     ],
   },
 ]

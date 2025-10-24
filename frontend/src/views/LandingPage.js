@@ -129,6 +129,12 @@ export default function LandingPage() {
             description: 'Transfer your SEVIS record from UCF to a new school in the United States.',
             icon: '🌐',
             path: '/forms/global-transfer-out'
+        },
+        {
+            title: 'Travel Approval Petition',
+            description: 'Submit a petition for international travel approval as required by UCF Policy.',
+            icon: '✈️',
+            path: '/forms/travel-approval-petition'
         }
     ]
 
