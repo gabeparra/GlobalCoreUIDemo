@@ -1800,17 +1800,17 @@ async def create_pathway_programs_intent_to_progress(
     last_name: str = Form(None),
     date_of_birth: str = Form(None),
     ethnicity: str = Form(None),
-    
+
     # Permanent Address
     street_address: str = Form(None),
     state: str = Form(None),
     city: str = Form(None),
     postal_code: str = Form(None),
     country: str = Form(None),
-    
+
     # UCF Global Program
     ucf_global_program: str = Form(None),
-    
+
     # Emergency Contact
     emergency_contact_name: str = Form(None),
     emergency_contact_relationship: str = Form(None),
@@ -1820,34 +1820,39 @@ async def create_pathway_programs_intent_to_progress(
     emergency_contact_postal_code: str = Form(None),
     emergency_contact_country: str = Form(None),
     emergency_contact_phone: str = Form(None),
-    
+
     # Application Information
     expected_progression_term: str = Form(None),
     academic_credits_earned: str = Form(None),
     intended_major: str = Form(None),
     has_accelerated_credits: str = Form(None),
-    
+
     # Post-Secondary Information
     attended_other_institutions: str = Form(None),
-    
+
     # College Entrance Exams
     sat_total_score: str = Form(None),
     sat_date_taken: str = Form(None),
     act_total_score: str = Form(None),
     act_date_taken: str = Form(None),
-    
+
     # Crime/Disciplinary Questions
     disciplinary_action: str = Form(None),
     felony_conviction: str = Form(None),
     criminal_proceedings: str = Form(None),
-    
+
     # Disclaimer
     certification: str = Form(None),
-    
+
     db: Session = Depends(get_db)
 ):
+    """Create a new Pathway Programs Intent to Progress request"""
     try:
-        # Prepare form data
+        # Convert string booleans to actual booleans
+        def str_to_bool(val):
+            return val.lower() == 'true' if val else False
+
+        # Prepare form data dictionary
         form_data = {
             # Student Information
             "ucf_id": ucf_id,
@@ -1855,17 +1860,17 @@ async def create_pathway_programs_intent_to_progress(
             "last_name": last_name,
             "date_of_birth": date_of_birth,
             "ethnicity": ethnicity,
-            
+
             # Permanent Address
             "street_address": street_address,
             "state": state,
             "city": city,
             "postal_code": postal_code,
             "country": country,
-            
+
             # UCF Global Program
             "ucf_global_program": ucf_global_program,
-            
+
             # Emergency Contact
             "emergency_contact_name": emergency_contact_name,
             "emergency_contact_relationship": emergency_contact_relationship,
@@ -1875,58 +1880,51 @@ async def create_pathway_programs_intent_to_progress(
             "emergency_contact_postal_code": emergency_contact_postal_code,
             "emergency_contact_country": emergency_contact_country,
             "emergency_contact_phone": emergency_contact_phone,
-            
+
             # Application Information
             "expected_progression_term": expected_progression_term,
             "academic_credits_earned": academic_credits_earned,
             "intended_major": intended_major,
             "has_accelerated_credits": str_to_bool(has_accelerated_credits),
-            
+
             # Post-Secondary Information
             "attended_other_institutions": str_to_bool(attended_other_institutions),
-            
+
             # College Entrance Exams
             "sat_total_score": sat_total_score,
             "sat_date_taken": sat_date_taken,
             "act_total_score": act_total_score,
             "act_date_taken": act_date_taken,
-            
+
             # Crime/Disciplinary Questions
             "disciplinary_action": str_to_bool(disciplinary_action),
             "felony_conviction": str_to_bool(felony_conviction),
             "criminal_proceedings": str_to_bool(criminal_proceedings),
-            
+
             # Disclaimer
             "certification": str_to_bool(certification)
         }
-        
-        # Create student name and ID
-        student_name = f"{first_name} {last_name}".strip() if first_name and last_name else "Unknown"
-        student_id = ucf_id or "Unknown"
-        
-        # Create database record
-        db_request = models.PathwayProgramsIntentToProgress(
-            student_name=student_name,
-            student_id=student_id,
+
+        # Create the request
+        pathway_programs_request = models.PathwayProgramsIntentToProgress(
+            student_name=f"{first_name} {last_name}".strip(),
+            student_id=ucf_id or "Unknown",
             program="Pathway Programs Intent to Progress",
-            submission_date=datetime.now(),
+            submission_date=datetime.utcnow(),
             status="pending",
             form_data=form_data
         )
-        
-        db.add(db_request)
+
+        db.add(pathway_programs_request)
         db.commit()
-        db.refresh(db_request)
-        
-        print(f"Created Pathway Programs Intent to Progress for {student_name} (ID: {db_request.id})")
-        return db_request
-        
+        db.refresh(pathway_programs_request)
+
+        return pathway_programs_request
+
     except Exception as e:
         db.rollback()
-        print(f"Error creating Pathway Programs Intent to Progress: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Error creating request: {str(e)}")
+        print(f"Error processing Pathway Programs Intent to Progress request: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Error processing Pathway Programs Intent to Progress request: {str(e)}")
 
 @router.get("/pathway-programs-intent-to-progress/", response_model=List[schemas.PathwayProgramsIntentToProgress])
 def get_pathway_programs_intent_to_progress(db: Session = Depends(get_db)):
@@ -1953,21 +1951,414 @@ def get_pathway_programs_intent_to_progress_request(request_id: int, db: Session
         print(f"Error retrieving Pathway Programs Intent to Progress request: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error retrieving request: {str(e)}")
 
-@router.delete("/pathway-programs-intent-to-progress/{request_id}")
+@router.delete("/pathway-programs-intent-to-progress/{request_id}", status_code=204)
 def delete_pathway_programs_intent_to_progress_request(request_id: int, db: Session = Depends(get_db)):
+    """Delete a specific Pathway Programs Intent to Progress request"""
+    db_request = db.query(models.PathwayProgramsIntentToProgress).filter(models.PathwayProgramsIntentToProgress.id == request_id).first()
+    if db_request is None:
+        raise HTTPException(status_code=404, detail="Pathway Programs Intent to Progress request not found")
+    
+    db.delete(db_request)
+    db.commit()
+    print(f"Deleted Pathway Programs Intent to Progress request ID: {request_id}")
+    return {"message": "Pathway Programs Intent to Progress request deleted successfully"}
+
+@router.delete("/pathway-programs-intent-to-progress/", status_code=204)
+def delete_all_pathway_programs_intent_to_progress_requests(db: Session = Depends(get_db)):
+    """Delete all Pathway Programs Intent to Progress requests from the database"""
     try:
-        request = db.query(models.PathwayProgramsIntentToProgress).filter(models.PathwayProgramsIntentToProgress.id == request_id).first()
-        if request is None:
-            raise HTTPException(status_code=404, detail="Pathway Programs Intent to Progress request not found")
+        # Count how many records will be deleted
+        count = db.query(models.PathwayProgramsIntentToProgress).count()
+        
+        # Delete all records
+        db.query(models.PathwayProgramsIntentToProgress).delete()
+        db.commit()
+        
+        print(f"Deleted {count} Pathway Programs Intent to Progress requests")
+        return {"message": f"Successfully deleted {count} Pathway Programs Intent to Progress requests"}
+    except Exception as e:
+        db.rollback()
+        print(f"Error deleting Pathway Programs Intent to Progress requests: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error deleting Pathway Programs Intent to Progress requests: {str(e)}")
+
+@router.post("/pathway-programs-next-steps/", response_model=schemas.PathwayProgramsNextSteps)
+async def create_pathway_programs_next_steps(
+    # Personal Information
+    ucf_id: str = Form(None),
+    first_name: str = Form(None),
+    last_name: str = Form(None),
+    legal_sex: str = Form(None),
+    email: str = Form(None),
+    phone_number: str = Form(None),
+
+    # Academic Information
+    academic_program: str = Form(None),
+    academic_track: str = Form(None),
+    intended_major: str = Form(None),
+
+    # Dietary Requirements
+    dietary_requirements: str = Form(None),
+
+    # Housing
+    housing_selection: str = Form(None),
+
+    # Acknowledgements
+    program_acknowledgement: str = Form(None),
+    housing_acknowledgement: str = Form(None),
+    health_insurance_acknowledgement: str = Form(None),
+
+    db: Session = Depends(get_db)
+):
+    """Create a new Pathway Programs Next Steps request"""
+    try:
+        # Convert string booleans to actual booleans
+        def str_to_bool(val):
+            return val.lower() == 'true' if val else False
+
+        # Prepare form data dictionary
+        form_data = {
+            # Personal Information
+            "ucf_id": ucf_id,
+            "first_name": first_name,
+            "last_name": last_name,
+            "legal_sex": legal_sex,
+            "email": email,
+            "phone_number": phone_number,
+
+            # Academic Information
+            "academic_program": academic_program,
+            "academic_track": academic_track,
+            "intended_major": intended_major,
+
+            # Dietary Requirements
+            "dietary_requirements": dietary_requirements,
+
+            # Housing
+            "housing_selection": housing_selection,
+
+            # Acknowledgements
+            "program_acknowledgement": str_to_bool(program_acknowledgement),
+            "housing_acknowledgement": str_to_bool(housing_acknowledgement),
+            "health_insurance_acknowledgement": str_to_bool(health_insurance_acknowledgement)
+        }
+
+        # Create the request
+        pathway_programs_request = models.PathwayProgramsNextSteps(
+            student_name=f"{first_name} {last_name}".strip(),
+            student_id=ucf_id or "Unknown",
+            program="Pathway Programs Next Steps",
+            submission_date=datetime.utcnow(),
+            status="pending",
+            form_data=form_data
+        )
+
+        db.add(pathway_programs_request)
+        db.commit()
+        db.refresh(pathway_programs_request)
+
+        return pathway_programs_request
+
+    except Exception as e:
+        db.rollback()
+        print(f"Error processing Pathway Programs Next Steps request: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Error processing Pathway Programs Next Steps request: {str(e)}")
+
+@router.get("/pathway-programs-next-steps/", response_model=List[schemas.PathwayProgramsNextSteps])
+def get_pathway_programs_next_steps(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    """Retrieve Pathway Programs Next Steps requests"""
+    try:
+        requests = db.query(models.PathwayProgramsNextSteps).offset(skip).limit(limit).all()
+        return requests
+    except Exception as e:
+        print(f"Error retrieving Pathway Programs Next Steps requests: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error retrieving Pathway Programs Next Steps requests: {str(e)}")
+
+@router.delete("/pathway-programs-next-steps/{request_id}", status_code=204)
+def delete_pathway_programs_next_steps_request(request_id: int, db: Session = Depends(get_db)):
+    """Delete a specific Pathway Programs Next Steps request"""
+    try:
+        request = db.query(models.PathwayProgramsNextSteps).filter(models.PathwayProgramsNextSteps.id == request_id).first()
+        
+        if not request:
+            raise HTTPException(status_code=404, detail="Pathway Programs Next Steps request not found")
         
         db.delete(request)
         db.commit()
         
-        print(f"Deleted Pathway Programs Intent to Progress request {request_id}")
-        return {"message": "Request deleted successfully"}
-    except HTTPException:
-        raise
+        return {"message": "Pathway Programs Next Steps request deleted successfully"}
     except Exception as e:
         db.rollback()
-        print(f"Error deleting Pathway Programs Intent to Progress request: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error deleting request: {str(e)}")
+        print(f"Error deleting Pathway Programs Next Steps request: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error deleting Pathway Programs Next Steps request: {str(e)}")
+
+@router.delete("/pathway-programs-next-steps/", status_code=204)
+def delete_all_pathway_programs_next_steps_requests(db: Session = Depends(get_db)):
+    """Delete all Pathway Programs Next Steps requests"""
+    try:
+        db.query(models.PathwayProgramsNextSteps).delete()
+        db.commit()
+        return {"message": "All Pathway Programs Next Steps requests deleted successfully"}
+    except Exception as e:
+        db.rollback()
+        print(f"Error deleting Pathway Programs Next Steps requests: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error deleting Pathway Programs Next Steps requests: {str(e)}")
+
+@router.post("/reduced-course-load/", response_model=schemas.ReducedCourseLoadRequest)
+async def create_reduced_course_load_request(
+    # Student Information
+    ucf_id: str = Form(None),
+    sevis_id: str = Form(None),
+    visa_type: str = Form(None),
+    given_name: str = Form(None),
+    family_name: str = Form(None),
+    street_address: str = Form(None),
+    apartment_number: str = Form(None),
+    city: str = Form(None),
+    state: str = Form(None),
+    postal_code: str = Form(None),
+    ucf_email_address: str = Form(None),
+    secondary_email_address: str = Form(None),
+    us_telephone_number: str = Form(None),
+
+    # Academic Information
+    academic_level: str = Form(None),
+    academic_program_major: str = Form(None),
+    rcl_term: str = Form(None),
+    rcl_year: str = Form(None),
+    desired_credits: str = Form(None),
+    in_person_credits: str = Form(None),
+
+    # RCL Reason
+    rcl_reason: str = Form(None),
+
+    db: Session = Depends(get_db)
+):
+    """Create a new Reduced Course Load Request"""
+    try:
+        # Prepare form data dictionary
+        form_data = {
+            # Student Information
+            "ucf_id": ucf_id,
+            "sevis_id": sevis_id,
+            "visa_type": visa_type,
+            "given_name": given_name,
+            "family_name": family_name,
+            "street_address": street_address,
+            "apartment_number": apartment_number,
+            "city": city,
+            "state": state,
+            "postal_code": postal_code,
+            "ucf_email_address": ucf_email_address,
+            "secondary_email_address": secondary_email_address,
+            "us_telephone_number": us_telephone_number,
+
+            # Academic Information
+            "academic_level": academic_level,
+            "academic_program_major": academic_program_major,
+            "rcl_term": rcl_term,
+            "rcl_year": rcl_year,
+            "desired_credits": desired_credits,
+            "in_person_credits": in_person_credits,
+
+            # RCL Reason
+            "rcl_reason": rcl_reason
+        }
+
+        # Create the request
+        reduced_course_load_request = models.ReducedCourseLoadRequest(
+            student_name=f"{given_name} {family_name}".strip(),
+            student_id=ucf_id or "Unknown",
+            program="Reduced Course Load Request",
+            submission_date=datetime.utcnow(),
+            status="pending",
+            form_data=form_data
+        )
+
+        db.add(reduced_course_load_request)
+        db.commit()
+        db.refresh(reduced_course_load_request)
+
+        return reduced_course_load_request
+
+    except Exception as e:
+        db.rollback()
+        print(f"Error processing Reduced Course Load Request: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Error processing Reduced Course Load Request: {str(e)}")
+
+@router.get("/reduced-course-load/", response_model=List[schemas.ReducedCourseLoadRequest])
+def get_reduced_course_load_requests(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    """Retrieve Reduced Course Load Requests"""
+    try:
+        requests = db.query(models.ReducedCourseLoadRequest).offset(skip).limit(limit).all()
+        return requests
+    except Exception as e:
+        print(f"Error retrieving Reduced Course Load Requests: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error retrieving Reduced Course Load Requests: {str(e)}")
+
+@router.delete("/reduced-course-load/{request_id}", status_code=204)
+def delete_reduced_course_load_request(request_id: int, db: Session = Depends(get_db)):
+    """Delete a specific Reduced Course Load Request"""
+    try:
+        request = db.query(models.ReducedCourseLoadRequest).filter(models.ReducedCourseLoadRequest.id == request_id).first()
+        
+        if not request:
+            raise HTTPException(status_code=404, detail="Reduced Course Load Request not found")
+        
+        db.delete(request)
+        db.commit()
+        
+        return {"message": "Reduced Course Load Request deleted successfully"}
+    except Exception as e:
+        db.rollback()
+        print(f"Error deleting Reduced Course Load Request: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error deleting Reduced Course Load Request: {str(e)}")
+
+@router.delete("/reduced-course-load/", status_code=204)
+def delete_all_reduced_course_load_requests(db: Session = Depends(get_db)):
+    """Delete all Reduced Course Load Requests"""
+    try:
+        db.query(models.ReducedCourseLoadRequest).delete()
+        db.commit()
+        return {"message": "All Reduced Course Load Requests deleted successfully"}
+    except Exception as e:
+        db.rollback()
+        print(f"Error deleting Reduced Course Load Requests: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error deleting Reduced Course Load Requests: {str(e)}")
+
+@router.post("/global-transfer-out/", response_model=schemas.GlobalTransferOutRequest)
+async def create_global_transfer_out_request(
+    # Student Information
+    ucf_id: str = Form(None),
+    sevis_id: str = Form(None),
+    visa_type: str = Form(None),
+    given_name: str = Form(None),
+    family_name: str = Form(None),
+    street_address: str = Form(None),
+    apartment_number: str = Form(None),
+    city: str = Form(None),
+    state: str = Form(None),
+    postal_code: str = Form(None),
+    ucf_email_address: str = Form(None),
+    secondary_email_address: str = Form(None),
+    us_telephone_number: str = Form(None),
+
+    # Current Academic Information
+    ucf_education_level: str = Form(None),
+    campus_employment: str = Form(None),
+
+    # New School Information
+    new_school_name: str = Form(None),
+    new_school_start_date: str = Form(None),
+    desired_sevis_release_date: str = Form(None),
+    new_school_international_advisor_name: str = Form(None),
+    new_school_international_advisor_email: str = Form(None),
+    new_school_international_advisor_phone: str = Form(None),
+
+    # Additional Information Checkboxes
+    understanding_sevis_release: str = Form(None),
+    permission_to_communicate: str = Form(None),
+    understanding_work_authorization: str = Form(None),
+    understanding_financial_obligations: str = Form(None),
+
+    db: Session = Depends(get_db)
+):
+    """Create a new Global Transfer Out Request"""
+    try:
+        # Prepare form data dictionary
+        form_data = {
+            # Student Information
+            "ucf_id": ucf_id,
+            "sevis_id": sevis_id,
+            "visa_type": visa_type,
+            "given_name": given_name,
+            "family_name": family_name,
+            "street_address": street_address,
+            "apartment_number": apartment_number,
+            "city": city,
+            "state": state,
+            "postal_code": postal_code,
+            "ucf_email_address": ucf_email_address,
+            "secondary_email_address": secondary_email_address,
+            "us_telephone_number": us_telephone_number,
+
+            # Current Academic Information
+            "ucf_education_level": ucf_education_level,
+            "campus_employment": campus_employment,
+
+            # New School Information
+            "new_school_name": new_school_name,
+            "new_school_start_date": new_school_start_date,
+            "desired_sevis_release_date": desired_sevis_release_date,
+            "new_school_international_advisor_name": new_school_international_advisor_name,
+            "new_school_international_advisor_email": new_school_international_advisor_email,
+            "new_school_international_advisor_phone": new_school_international_advisor_phone,
+
+            # Additional Information Checkboxes
+            "understanding_sevis_release": understanding_sevis_release == 'true',
+            "permission_to_communicate": permission_to_communicate == 'true',
+            "understanding_work_authorization": understanding_work_authorization == 'true',
+            "understanding_financial_obligations": understanding_financial_obligations == 'true'
+        }
+
+        # Create the request
+        global_transfer_out_request = models.GlobalTransferOutRequest(
+            student_name=f"{given_name} {family_name}".strip(),
+            student_id=ucf_id or "Unknown",
+            program="Global Transfer Out Request",
+            submission_date=datetime.utcnow(),
+            status="pending",
+            form_data=form_data
+        )
+
+        db.add(global_transfer_out_request)
+        db.commit()
+        db.refresh(global_transfer_out_request)
+
+        return global_transfer_out_request
+
+    except Exception as e:
+        db.rollback()
+        print(f"Error processing Global Transfer Out Request: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Error processing Global Transfer Out Request: {str(e)}")
+
+@router.get("/global-transfer-out/", response_model=List[schemas.GlobalTransferOutRequest])
+def get_global_transfer_out_requests(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    """Retrieve Global Transfer Out Requests"""
+    try:
+        requests = db.query(models.GlobalTransferOutRequest).offset(skip).limit(limit).all()
+        return requests
+    except Exception as e:
+        print(f"Error retrieving Global Transfer Out Requests: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error retrieving Global Transfer Out Requests: {str(e)}")
+
+@router.delete("/global-transfer-out/{request_id}", status_code=204)
+def delete_global_transfer_out_request(request_id: int, db: Session = Depends(get_db)):
+    """Delete a specific Global Transfer Out Request"""
+    try:
+        request = db.query(models.GlobalTransferOutRequest).filter(models.GlobalTransferOutRequest.id == request_id).first()
+        
+        if not request:
+            raise HTTPException(status_code=404, detail="Global Transfer Out Request not found")
+        
+        db.delete(request)
+        db.commit()
+        
+        return {"message": "Global Transfer Out Request deleted successfully"}
+    except Exception as e:
+        db.rollback()
+        print(f"Error deleting Global Transfer Out Request: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error deleting Global Transfer Out Request: {str(e)}")
+
+@router.delete("/global-transfer-out/", status_code=204)
+def delete_all_global_transfer_out_requests(db: Session = Depends(get_db)):
+    """Delete all Global Transfer Out Requests"""
+    try:
+        db.query(models.GlobalTransferOutRequest).delete()
+        db.commit()
+        return {"message": "All Global Transfer Out Requests deleted successfully"}
+    except Exception as e:
+        db.rollback()
+        print(f"Error deleting Global Transfer Out Requests: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error deleting Global Transfer Out Requests: {str(e)}")
+    
+    

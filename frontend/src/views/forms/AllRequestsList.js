@@ -1,329 +1,331 @@
 // src/views/forms/AllRequestsList.js
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import {
     CCard, CCardBody, CCardHeader,
-    CRow, CCol, CTable, CTableHead, CTableRow, CTableHeaderCell, CTableBody, CTableDataCell,
-    CButton, CSpinner, CAlert, CAccordion, CAccordionItem, CAccordionHeader, CAccordionBody,
-    CNav, CNavItem, CNavLink, CTabContent, CTabPane,
+    CRow, CCol, CNav, CNavItem, CNavLink,
+    CTabContent, CTabPane, CTable, CTableHead,
+    CTableBody, CTableRow, CTableHeaderCell,
+    CTableDataCell, CButton, CSpinner, CAlert,
     CModal, CModalHeader, CModalTitle, CModalBody, CModalFooter
 } from '@coreui/react'
 
-export default function AllRequestsList() {
+// Custom hook for fetching requests
+const useFetchRequests = () => {
     const [requests, setRequests] = useState([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
-    const [isDeleting, setIsDeleting] = useState(false)
-    const [deleteSuccess, setDeleteSuccess] = useState(false)
-    const [activeTab, setActiveTab] = useState(1)
-    const [selectedRequests, setSelectedRequests] = useState([])
-    const [viewModalVisible, setViewModalVisible] = useState(false)
-    const [selectedRequest, setSelectedRequest] = useState(null)
 
-    const fetchRequests = async () => {
+    const fetchAllRequests = async () => {
         try {
-            setLoading(true)
+            const requestTypes = [
+                { name: 'i20-requests', label: 'I-20' },
+                { name: 'academic-training', label: 'Academic Training' },
+                { name: 'administrative-record', label: 'Administrative Record' },
+                { name: 'conversation-partner', label: 'Conversation Partner' },
+                { name: 'opt-requests', label: 'OPT Request' },
+                { name: 'document-requests', label: 'Document Request' },
+                { name: 'english-language-volunteer', label: 'English Language Volunteer' },
+                { name: 'off-campus-housing', label: 'Off Campus Housing' },
+                { name: 'florida-statute-101035', label: 'Florida Statute 1010.35' },
+                { name: 'leave-requests', label: 'Leave Request' },
+                { name: 'opt-stem-reports', label: 'OPT STEM Extension Reporting' },
+                { name: 'opt-stem-applications', label: 'OPT STEM Extension Application' },
+                { name: 'exit-forms', label: 'Exit Form' },
+                { name: 'pathway-programs-intent-to-progress', label: 'Pathway Programs Intent to Progress' },
+                { name: 'pathway-programs-next-steps', label: 'Pathway Programs Next Steps' },
+                { name: 'reduced-course-load', label: 'Reduced Course Load Request' },
+                { name: 'global-transfer-out', label: 'Global Transfer Out Request' }
+            ]
 
-            // Fetch all request types
-            const [i20Response, academicResponse, administrativeResponse, conversationResponse, optResponse, documentResponse, volunteerResponse, housingResponse, floridaStatuteResponse, leaveResponse, optStemResponse, optStemAppResponse, exitFormResponse] = await Promise.all([
-                fetch('http://localhost:8000/api/i20-requests/'),
-                fetch('http://localhost:8000/api/academic-training/'),
-                fetch('http://localhost:8000/api/administrative-record/'),
-                fetch('http://localhost:8000/api/conversation-partner/'),
-                fetch('http://localhost:8000/api/opt-requests/'),
-                fetch('http://localhost:8000/api/document-requests/'),
-                fetch('http://localhost:8000/api/english-language-volunteer/'),
-                fetch('http://localhost:8000/api/off-campus-housing/'),
-                fetch('http://localhost:8000/api/florida-statute-101035/'),
-                fetch('http://localhost:8000/api/leave-requests/'),
-                fetch('http://localhost:8000/api/opt-stem-reports/'),
-                fetch('http://localhost:8000/api/opt-stem-applications/'),
-                fetch('http://localhost:8000/api/exit-forms/')
-            ])
+            const responses = await Promise.all(
+                requestTypes.map(type =>
+                    fetch(`http://localhost:8000/api/${type.name}/`)
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error(`${type.label} HTTP error! Status: ${response.status}`)
+                            }
+                            return response.json()
+                        })
+                )
+            )
 
-            if (!i20Response.ok) {
-                throw new Error(`I-20 HTTP error! Status: ${i20Response.status}`)
-            }
-
-            if (!academicResponse.ok) {
-                throw new Error(`Academic Training HTTP error! Status: ${academicResponse.status}`)
-            }
-
-            if (!administrativeResponse.ok) {
-                throw new Error(`Administrative Record HTTP error! Status: ${administrativeResponse.status}`)
-            }
-
-            if (!conversationResponse.ok) {
-                throw new Error(`Conversation Partner HTTP error! Status: ${conversationResponse.status}`)
-            }
-
-            if (!optResponse.ok) {
-                throw new Error(`OPT Request HTTP error! Status: ${optResponse.status}`)
-            }
-
-            if (!documentResponse.ok) {
-                throw new Error(`Document Request HTTP error! Status: ${documentResponse.status}`)
-            }
-
-            if (!volunteerResponse.ok) {
-                throw new Error(`English Language Volunteer HTTP error! Status: ${volunteerResponse.status}`)
-            }
-
-            if (!housingResponse.ok) {
-                throw new Error(`Off Campus Housing HTTP error! Status: ${housingResponse.status}`)
-            }
-
-            if (!floridaStatuteResponse.ok) {
-                throw new Error(`Florida Statute 1010.35 HTTP error! Status: ${floridaStatuteResponse.status}`)
-            }
-
-            if (!leaveResponse.ok) {
-                throw new Error(`Leave Request HTTP error! Status: ${leaveResponse.status}`)
-            }
-
-            if (!optStemResponse.ok) {
-                throw new Error(`OPT STEM Extension HTTP error! Status: ${optStemResponse.status}`)
-            }
-
-            if (!optStemAppResponse.ok) {
-                throw new Error(`OPT STEM Extension Application HTTP error! Status: ${optStemAppResponse.status}`)
-            }
-
-            if (!exitFormResponse.ok) {
-                throw new Error(`Exit Form HTTP error! Status: ${exitFormResponse.status}`)
-            }
-
-            const i20Data = await i20Response.json()
-            const academicData = await academicResponse.json()
-            const administrativeData = await administrativeResponse.json()
-            const conversationData = await conversationResponse.json()
-            const optData = await optResponse.json()
-            const documentData = await documentResponse.json()
-            const volunteerData = await volunteerResponse.json()
-            const housingData = await housingResponse.json()
-            const floridaStatuteData = await floridaStatuteResponse.json()
-            const leaveData = await leaveResponse.json()
-            const optStemData = await optStemResponse.json()
-            const optStemAppData = await optStemAppResponse.json()
-            const exitFormData = await exitFormResponse.json()
-
-            // Combine all datasets
-            const allRequests = [...i20Data, ...academicData, ...administrativeData, ...conversationData, ...optData, ...documentData, ...volunteerData, ...housingData, ...floridaStatuteData, ...leaveData, ...optStemData, ...optStemAppData, ...exitFormData]
-            console.log('Fetched I-20 requests:', i20Data.length)
-            console.log('Fetched Academic Training requests:', academicData.length)
-            console.log('Fetched Administrative Record requests:', administrativeData.length)
-            console.log('Fetched Conversation Partner requests:', conversationData.length)
-            console.log('Fetched OPT requests:', optData.length)
-            console.log('Fetched Document requests:', documentData.length)
-            console.log('Fetched English Language Volunteer requests:', volunteerData.length)
-            console.log('Fetched Off Campus Housing requests:', housingData.length)
-            console.log('Fetched Florida Statute 1010.35 requests:', floridaStatuteData.length)
-            console.log('Fetched Leave requests:', leaveData.length)
-            console.log('Fetched OPT STEM Extension reports:', optStemData.length)
-            console.log('Fetched OPT STEM Extension applications:', optStemAppData.length)
-            console.log('Fetched Exit Forms:', exitFormData.length)
-            console.log('Total requests:', allRequests.length)
-
+            const allRequests = responses.flat()
             setRequests(allRequests)
             setError(null)
         } catch (err) {
             console.error('Error fetching requests:', err)
-            setError(`Failed to load requests: ${err.message}`)
+            setError(err.message)
         } finally {
             setLoading(false)
         }
     }
 
-    // Function to delete a single request
-    const deleteRequest = async (requestId, program) => {
+    useEffect(() => {
+        fetchAllRequests()
+    }, [])
+
+    return {
+        requests,
+        loading,
+        error,
+        setRequests,
+        refetchRequests: fetchAllRequests
+    }
+}
+
+// Reusable request filtering hook
+const useRequestFilters = (requests) => {
+    const requestFilters = {
+        'I-20': req => req.program === 'I-20 Request',
+        'Academic Training': req => req.program === 'Academic Training',
+        'Administrative Record': req => req.program === 'Administrative Record Change',
+        'Conversation Partner': req => req.program === 'Conversation Partner',
+        'OPT Request': req => req.program === 'OPT Request',
+        'Document Request': req => req.program === 'Document Request',
+        'English Language Volunteer': req => req.program === 'English Language Program Volunteer',
+        'Off Campus Housing': req => req.program === 'Off Campus Housing Application',
+        'Florida Statute 1010.35': req => req.program === 'Florida Statute 1010.35',
+        'Leave Request': req => req.program === 'Leave Request',
+        'OPT STEM Extension Reporting': req => req.program === 'OPT STEM Extension Reporting',
+        'OPT STEM Extension Application': req => req.program === 'OPT STEM Extension Application',
+        'Exit Form': req => req.program === 'Exit Form',
+        'Pathway Programs Intent to Progress': req => req.program === 'Pathway Programs Intent to Progress',
+        'Pathway Programs Next Steps': req => req.program === 'Pathway Programs Next Steps',
+        'Reduced Course Load Request': req => req.program === 'Reduced Course Load Request',
+        'Global Transfer Out Request': req => req.program === 'Global Transfer Out Request'
+    }
+
+    return Object.entries(requestFilters).reduce((acc, [key, filter]) => {
+        acc[key] = requests.filter(filter)
+        return acc
+    }, {})
+}
+
+// Reusable request type formatter
+const formatRequestType = (request) => {
+    const typeFormatters = {
+        'Academic Training': req => {
+            const completionType = req.form_data?.completion_type || req.form_data?.completionType
+            return completionType === 'pre' ? 'Academic Training: Pre-Completion' : 'Academic Training: Post-Completion'
+        },
+        'Administrative Record Change': req => {
+            const actions = req.form_data?.actionRequested || req.form_data?.action_requested
+            return actions && actions.length > 0
+                ? `Admin Record: ${actions.length === 1 ? actions[0] : actions.join(', ')}`
+                : 'Administrative Record Change'
+        },
+        'Conversation Partner': req => `Conversation Partner: ${req.form_data?.academic_level || 'N/A'}`,
+        'OPT Request': req => `OPT Request: ${req.form_data?.academic_level || 'N/A'}`,
+        'Document Request': req => `Document Request: ${req.form_data?.global_student_document || req.form_data?.undergrad_document || 'N/A'}`,
+        'English Language Program Volunteer': req => `English Language Volunteer: ${req.form_data?.academic_level || 'N/A'}`,
+        'Off Campus Housing Application': req => `Off Campus Housing: ${req.form_data?.payment_status || 'PENDING'}`,
+        'Florida Statute 1010.35': req => `Florida Statute 1010.35: ${req.form_data?.position || 'N/A'}`,
+        'Leave Request': req => `Leave Request: ${req.form_data?.leave_type || 'N/A'}`,
+        'OPT STEM Extension Reporting': req => {
+            const reportType = []
+            if (req.form_data?.standard_opt) reportType.push('Standard OPT')
+            if (req.form_data?.stem_extension) reportType.push('STEM Extension')
+            return `OPT STEM Report: ${reportType.length > 0 ? reportType.join(', ') : 'N/A'}`
+        },
+        'OPT STEM Extension Application': req => `OPT STEM Application: ${req.form_data?.academic_level || 'N/A'}`,
+        'Exit Form': req => `Exit Form: ${req.form_data?.departure_reason || 'N/A'}`,
+        'Pathway Programs Intent to Progress': () => `Pathway Programs Intent to Progress`,
+        'Pathway Programs Next Steps': req => {
+            const academicProgram = req.form_data?.academic_program || 'N/A';
+            const academicTrack = req.form_data?.academic_track || 'N/A';
+            return `Pathway Programs Next Steps: ${academicProgram} - ${academicTrack}`;
+        },
+        'Reduced Course Load Request': req => {
+            const academicProgram = req.form_data?.academic_program_major || 'N/A';
+            const rclTerm = req.form_data?.rcl_term || 'N/A';
+            const rclYear = req.form_data?.rcl_year || 'N/A';
+            return `Reduced Course Load: ${academicProgram} (${rclTerm} ${rclYear})`;
+        },
+        'Global Transfer Out Request': req => {
+            const newSchool = req.form_data?.new_school_name || 'N/A';
+            const startDate = req.form_data?.new_school_start_date || 'N/A';
+            return `Transfer Out: ${newSchool} (${startDate})`;
+        }
+    }
+
+    const formatter = typeFormatters[request.program] || (req => req.program)
+    return formatter(request)
+}
+
+// Main component
+export default function AllRequestsList() {
+    const {
+        requests,
+        loading,
+        error,
+        setRequests,
+        refetchRequests
+    } = useFetchRequests()
+    const filteredRequests = useRequestFilters(requests)
+    const [activeTab, setActiveTab] = useState(1)
+    const [selectedRequests, setSelectedRequests] = useState([])
+    const [isDeleting, setIsDeleting] = useState(false)
+    const [deleteError, setDeleteError] = useState(null)
+    const [viewModalVisible, setViewModalVisible] = useState(false)
+    const [selectedRequest, setSelectedRequest] = useState(null)
+
+    // Determine the endpoint based on the request program
+    const getDeleteEndpoint = (request) => {
+        const programToEndpoint = {
+            'Academic Training': `http://localhost:8000/api/academic-training/${request.id}`,
+            'Administrative Record Change': `http://localhost:8000/api/administrative-record/${request.id}`,
+            'Conversation Partner': `http://localhost:8000/api/conversation-partner/${request.id}`,
+            'OPT Request': `http://localhost:8000/api/opt-requests/${request.id}`,
+            'Document Request': `http://localhost:8000/api/document-requests/${request.id}`,
+            'English Language Program Volunteer': `http://localhost:8000/api/english-language-volunteer/${request.id}`,
+            'Off Campus Housing Application': `http://localhost:8000/api/off-campus-housing/${request.id}`,
+            'Florida Statute 1010.35': `http://localhost:8000/api/florida-statute-101035/${request.id}`,
+            'Leave Request': `http://localhost:8000/api/leave-requests/${request.id}`,
+            'OPT STEM Extension Reporting': `http://localhost:8000/api/opt-stem-reports/${request.id}`,
+            'OPT STEM Extension Application': `http://localhost:8000/api/opt-stem-applications/${request.id}`,
+            'Exit Form': `http://localhost:8000/api/exit-forms/${request.id}`,
+            'Pathway Programs Intent to Progress': `http://localhost:8000/api/pathway-programs-intent-to-progress/${request.id}`,
+            'Pathway Programs Next Steps': `http://localhost:8000/api/pathway-programs-next-steps/${request.id}`,
+            'Reduced Course Load Request': `http://localhost:8000/api/reduced-course-load/${request.id}`,
+            'Global Transfer Out Request': `http://localhost:8000/api/global-transfer-out/${request.id}`,
+            'I-20 Request': `http://localhost:8000/api/i20-requests/${request.id}`
+        }
+
+        return programToEndpoint[request.program] || `http://localhost:8000/api/i20-requests/${request.id}`
+    }
+
+    // Delete a single request
+    const deleteRequest = async (request) => {
+        if (!request) return
+
         try {
             setIsDeleting(true)
-            setError(null)
+            setDeleteError(null)
 
-            let endpoint;
-            if (program === 'Academic Training') {
-                endpoint = `http://localhost:8000/api/academic-training/${requestId}`
-            } else if (program === 'Administrative Record Change') {
-                endpoint = `http://localhost:8000/api/administrative-record/${requestId}`
-            } else if (program === 'Conversation Partner') {
-                endpoint = `http://localhost:8000/api/conversation-partner/${requestId}`
-            } else if (program === 'OPT Request') {
-                endpoint = `http://localhost:8000/api/opt-requests/${requestId}`
-            } else if (program === 'Document Request') {
-                endpoint = `http://localhost:8000/api/document-requests/${requestId}`
-            } else if (program === 'English Language Program Volunteer') {
-                endpoint = `http://localhost:8000/api/english-language-volunteer/${requestId}`
-            } else if (program === 'Off Campus Housing Application') {
-                endpoint = `http://localhost:8000/api/off-campus-housing/${requestId}`
-            } else if (program === 'Florida Statute 1010.35') {
-                endpoint = `http://localhost:8000/api/florida-statute-101035/${requestId}`
-            } else if (program === 'Leave Request') {
-                endpoint = `http://localhost:8000/api/leave-requests/${requestId}`
-            } else if (program === 'OPT STEM Extension Reporting') {
-                endpoint = `http://localhost:8000/api/opt-stem-reports/${requestId}`
-            } else if (program === 'OPT STEM Extension Application') {
-                endpoint = `http://localhost:8000/api/opt-stem-applications/${requestId}`
-            } else if (program === 'Exit Form') {
-                endpoint = `http://localhost:8000/api/exit-forms/${requestId}`
-            } else {
-                endpoint = `http://localhost:8000/api/i20-requests/${requestId}`
-            }
-
-            const response = await fetch(endpoint, {
-                method: 'DELETE',
-            })
+            const endpoint = getDeleteEndpoint(request)
+            const response = await fetch(endpoint, { method: 'DELETE' })
 
             if (!response.ok) {
                 const errorText = await response.text()
                 throw new Error(`Failed to delete request: ${response.status} ${response.statusText} - ${errorText}`)
             }
 
-            console.log(`Request ${requestId} deleted successfully`)
+            // Remove the request from the local state
+            setRequests(prevRequests =>
+                prevRequests.filter(req => req.id !== request.id)
+            )
 
-            // Remove from local state
-            setRequests(prev => prev.filter(req => req.id !== requestId))
-            setSelectedRequests(prev => prev.filter(id => id !== requestId))
-            setDeleteSuccess(true)
-
-            // Hide success message after 3 seconds
-            setTimeout(() => {
-                setDeleteSuccess(false)
-            }, 3000)
-
+            // Remove from selected requests if it was selected
+            setSelectedRequests(prevSelected =>
+                prevSelected.filter(id => id !== request.id)
+            )
         } catch (err) {
             console.error('Error deleting request:', err)
-            setError(`Failed to delete request: ${err.message}`)
+            setDeleteError(err.message)
         } finally {
             setIsDeleting(false)
+            setViewModalVisible(false)
         }
     }
 
-    // Function to delete multiple selected requests
+    // Delete multiple selected requests
     const deleteSelectedRequests = async () => {
         if (selectedRequests.length === 0) return
 
         try {
             setIsDeleting(true)
-            setError(null)
-            setDeleteSuccess(false)
+            setDeleteError(null)
 
-            // Delete each selected request
-            const deletePromises = selectedRequests.map(reqId => {
-                const request = requests.find(r => r.id === reqId)
-                let endpoint;
-                if (request.program === 'Academic Training') {
-                    endpoint = `http://localhost:8000/api/academic-training/${reqId}`
-                } else if (request.program === 'Administrative Record Change') {
-                    endpoint = `http://localhost:8000/api/administrative-record/${reqId}`
-                } else if (request.program === 'Conversation Partner') {
-                    endpoint = `http://localhost:8000/api/conversation-partner/${reqId}`
-                } else if (request.program === 'OPT Request') {
-                    endpoint = `http://localhost:8000/api/opt-requests/${reqId}`
-                } else if (request.program === 'Document Request') {
-                    endpoint = `http://localhost:8000/api/document-requests/${reqId}`
-                } else if (request.program === 'English Language Program Volunteer') {
-                    endpoint = `http://localhost:8000/api/english-language-volunteer/${reqId}`
-                } else if (request.program === 'Off Campus Housing Application') {
-                    endpoint = `http://localhost:8000/api/off-campus-housing/${reqId}`
-                } else if (request.program === 'Florida Statute 1010.35') {
-                    endpoint = `http://localhost:8000/api/florida-statute-101035/${reqId}`
-                } else if (request.program === 'Leave Request') {
-                    endpoint = `http://localhost:8000/api/leave-requests/${reqId}`
-                } else if (request.program === 'OPT STEM Extension Reporting') {
-                    endpoint = `http://localhost:8000/api/opt-stem-reports/${reqId}`
-                } else if (request.program === 'OPT STEM Extension Application') {
-                    endpoint = `http://localhost:8000/api/opt-stem-applications/${reqId}`
-                } else if (request.program === 'Exit Form') {
-                    endpoint = `http://localhost:8000/api/exit-forms/${reqId}`
-                } else {
-                    endpoint = `http://localhost:8000/api/i20-requests/${reqId}`
+            // Find the requests to delete
+            const requestsToDelete = requests.filter(req =>
+                selectedRequests.includes(req.id)
+            )
+
+            // Delete each request
+            const deletePromises = requestsToDelete.map(async (request) => {
+                const endpoint = getDeleteEndpoint(request)
+                const response = await fetch(endpoint, { method: 'DELETE' })
+
+                if (!response.ok) {
+                    const errorText = await response.text()
+                    throw new Error(`Failed to delete request ${request.id}: ${response.status} ${response.statusText} - ${errorText}`)
                 }
 
-                return fetch(endpoint, { method: 'DELETE' })
+                return request.id
             })
 
-            const responses = await Promise.all(deletePromises)
+            // Wait for all deletions to complete
+            await Promise.all(deletePromises)
 
-            // Check if all deletions were successful
-            const allSuccess = responses.every(res => res.ok)
+            // Remove deleted requests from local state
+            setRequests(prevRequests =>
+                prevRequests.filter(req => !selectedRequests.includes(req.id))
+            )
 
-            if (!allSuccess) {
-                throw new Error('Some requests failed to delete')
-            }
-
-            console.log(`${selectedRequests.length} requests deleted successfully`)
-
-            // Remove from local state
-            setRequests(prev => prev.filter(req => !selectedRequests.includes(req.id)))
+            // Clear selected requests
             setSelectedRequests([])
-            setDeleteSuccess(true)
-
-            // Hide success message after 3 seconds
-            setTimeout(() => {
-                setDeleteSuccess(false)
-            }, 3000)
-
         } catch (err) {
             console.error('Error deleting selected requests:', err)
-            setError(`Failed to delete selected requests: ${err.message}`)
+            setDeleteError(err.message)
         } finally {
             setIsDeleting(false)
         }
     }
 
-    // Function to delete all requests
+    // Delete all requests
     const deleteAllRequests = async () => {
         try {
             setIsDeleting(true)
-            setError(null)
-            setDeleteSuccess(false)
+            setDeleteError(null)
+
+            const requestTypes = [
+                'i20-requests',
+                'academic-training',
+                'administrative-record',
+                'conversation-partner',
+                'opt-requests',
+                'document-requests',
+                'english-language-volunteer',
+                'off-campus-housing',
+                'florida-statute-101035',
+                'leave-requests',
+                'opt-stem-reports',
+                'opt-stem-applications',
+                'exit-forms',
+                'pathway-programs-intent-to-progress',
+                'pathway-programs-next-steps',
+                'reduced-course-load'
+            ]
 
             // Delete from all endpoints
-            const [i20Response, academicResponse, administrativeResponse, conversationResponse, optResponse, documentResponse, volunteerResponse, housingResponse, floridaStatuteResponse, leaveResponse, optStemResponse, optStemAppResponse, exitFormResponse] = await Promise.all([
-                fetch('http://localhost:8000/api/i20-requests/', { method: 'DELETE' }),
-                fetch('http://localhost:8000/api/academic-training/', { method: 'DELETE' }),
-                fetch('http://localhost:8000/api/administrative-record/', { method: 'DELETE' }),
-                fetch('http://localhost:8000/api/conversation-partner/', { method: 'DELETE' }),
-                fetch('http://localhost:8000/api/opt-requests/', { method: 'DELETE' }),
-                fetch('http://localhost:8000/api/document-requests/', { method: 'DELETE' }),
-                fetch('http://localhost:8000/api/english-language-volunteer/', { method: 'DELETE' }),
-                fetch('http://localhost:8000/api/off-campus-housing/', { method: 'DELETE' }),
-                fetch('http://localhost:8000/api/florida-statute-101035/', { method: 'DELETE' }),
-                fetch('http://localhost:8000/api/leave-requests/', { method: 'DELETE' }),
-                fetch('http://localhost:8000/api/opt-stem-reports/', { method: 'DELETE' }),
-                fetch('http://localhost:8000/api/opt-stem-applications/', { method: 'DELETE' }),
-                fetch('http://localhost:8000/api/exit-forms/', { method: 'DELETE' })
-            ])
+            const deletePromises = requestTypes.map(type =>
+                fetch(`http://localhost:8000/api/${type}/`, { method: 'DELETE' })
+            )
 
-            if (!i20Response.ok || !academicResponse.ok || !administrativeResponse.ok || !conversationResponse.ok || !optResponse.ok || !documentResponse.ok || !volunteerResponse.ok || !housingResponse.ok || !floridaStatuteResponse.ok || !leaveResponse.ok || !optStemResponse.ok || !optStemAppResponse.ok || !exitFormResponse.ok) {
-                const i20Error = i20Response.ok ? '' : await i20Response.text()
-                const academicError = academicResponse.ok ? '' : await academicResponse.text()
-                const adminError = administrativeResponse.ok ? '' : await administrativeResponse.text()
-                const conversationError = conversationResponse.ok ? '' : await conversationResponse.text()
-                const optError = optResponse.ok ? '' : await optResponse.text()
-                const documentError = documentResponse.ok ? '' : await documentResponse.text()
-                const volunteerError = volunteerResponse.ok ? '' : await volunteerResponse.text()
-                const housingError = housingResponse.ok ? '' : await housingResponse.text()
-                const floridaStatuteError = floridaStatuteResponse.ok ? '' : await floridaStatuteResponse.text()
-                const leaveError = leaveResponse.ok ? '' : await leaveResponse.text()
-                const optStemError = optStemResponse.ok ? '' : await optStemResponse.text()
-                const optStemAppError = optStemAppResponse.ok ? '' : await optStemAppResponse.text()
-                const exitFormError = exitFormResponse.ok ? '' : await exitFormResponse.text()
-                throw new Error(`Failed to delete requests: ${i20Error} ${academicError} ${adminError} ${conversationError} ${optError} ${documentError} ${volunteerError} ${housingError} ${floridaStatuteError} ${leaveError} ${optStemError} ${optStemAppError} ${exitFormError}`)
+            const responses = await Promise.all(deletePromises)
+
+            // Check if all deletions were successful
+            const allSuccess = responses.every(res => res.ok)
+            if (!allSuccess) {
+                const errorResponses = await Promise.all(
+                    responses.map(async (res, index) => {
+                        if (!res.ok) {
+                            const errorText = await res.text()
+                            return `${requestTypes[index]}: ${res.status} ${res.statusText} - ${errorText}`
+                        }
+                        return null
+                    })
+                )
+                const errorMessages = errorResponses.filter(msg => msg !== null)
+                throw new Error(`Some requests failed to delete:\n${errorMessages.join('\n')}`)
             }
 
-            console.log('All requests deleted successfully')
-            setDeleteSuccess(true)
-            setRequests([]) // Clear the local state
+            // Clear all requests from local state
+            setRequests([])
             setSelectedRequests([])
-
-            // Hide success message after 3 seconds
-            setTimeout(() => {
-                setDeleteSuccess(false)
-            }, 3000)
-
         } catch (err) {
             console.error('Error deleting requests:', err)
-            setError(`Failed to delete requests: ${err.message}`)
+            setDeleteError(err.message)
         } finally {
             setIsDeleting(false)
         }
@@ -340,13 +342,19 @@ export default function AllRequestsList() {
         })
     }
 
-    // Toggle select all/none
+    // Toggle select all/none for a specific list of requests
     const toggleSelectAll = (requestsList) => {
-        if (selectedRequests.length === requestsList.length && requestsList.length > 0) {
-            setSelectedRequests([])
-        } else {
-            setSelectedRequests(requestsList.map(req => req.id))
-        }
+        const requestIds = requestsList.map(req => req.id)
+
+        setSelectedRequests(prev => {
+            // If all requests are already selected, deselect all
+            if (requestIds.every(id => prev.includes(id))) {
+                return prev.filter(id => !requestIds.includes(id))
+            }
+
+            // Otherwise, select all requests
+            return [...new Set([...prev, ...requestIds])]
+        })
     }
 
     // View request details
@@ -361,112 +369,74 @@ export default function AllRequestsList() {
         setSelectedRequest(null)
     }
 
-    useEffect(() => {
-        fetchRequests()
-    }, [])
-
-    // Format date for display
-    const formatDate = (dateString) => {
-        if (!dateString) return 'N/A'
-        const date = new Date(dateString)
-        return date.toLocaleString()
-    }
-
-    // Format JSON with syntax highlighting
-    const formatJSON = (jsonObj) => {
-        if (!jsonObj) return 'N/A';
-
-        // Convert JSON to string with proper indentation
-        const jsonString = JSON.stringify(jsonObj, null, 2);
-
-        // Apply syntax highlighting by wrapping different parts in spans with classes
-        return jsonString
-            .replace(/"([^"]+)":/g, '<span class="json-key">"$1"</span>:') // keys
-            .replace(/"([^"]+)"(?!:)/g, '<span class="json-string">"$1"</span>') // strings
-            .replace(/\b(true|false)\b/g, '<span class="json-boolean">$1</span>') // booleans
-            .replace(/\b(null)\b/g, '<span class="json-null">$1</span>') // null
-            .replace(/\b(\d+)\b/g, '<span class="json-number">$1</span>'); // numbers
-    }
-
-    // Filter requests by type
-    const i20Requests = requests.filter(req =>
-        req.program !== 'Academic Training' &&
-        req.program !== 'Administrative Record Change' &&
-        req.program !== 'Conversation Partner' &&
-        req.program !== 'OPT Request' &&
-        req.program !== 'Document Request' &&
-        req.program !== 'English Language Program Volunteer' &&
-        req.program !== 'Off Campus Housing Application' &&
-        req.program !== 'Florida Statute 1010.35' &&
-        req.program !== 'Leave Request' &&
-        req.program !== 'OPT STEM Extension Reporting' &&
-        req.program !== 'OPT STEM Extension Application' &&
-        req.program !== 'Exit Form'
-    );
-    const academicTrainingRequests = requests.filter(req => req.program === 'Academic Training');
-    const administrativeRecordRequests = requests.filter(req => req.program === 'Administrative Record Change');
-    const conversationPartnerRequests = requests.filter(req => req.program === 'Conversation Partner');
-    const optRequests = requests.filter(req => req.program === 'OPT Request');
-    const documentRequests = requests.filter(req => req.program === 'Document Request');
-    const volunteerRequests = requests.filter(req => req.program === 'English Language Program Volunteer');
-    const housingRequests = requests.filter(req => req.program === 'Off Campus Housing Application');
-    const floridaStatuteRequests = requests.filter(req => req.program === 'Florida Statute 1010.35');
-    const leaveRequests = requests.filter(req => req.program === 'Leave Request');
-    const optStemReports = requests.filter(req => req.program === 'OPT STEM Extension Reporting');
-    const optStemApplications = requests.filter(req => req.program === 'OPT STEM Extension Application');
-    const exitFormRequests = requests.filter(req => req.program === 'Exit Form');
-
-    // Get request type
-    const getRequestType = (request) => {
-        if (request.program === 'Academic Training') {
-            // Check both camelCase and snake_case for compatibility
-            const completionType = request.form_data?.completion_type || request.form_data?.completionType;
-            return completionType === 'pre' ? 'Academic Training: Pre-Completion' : 'Academic Training: Post-Completion';
-        } else if (request.program === 'Administrative Record Change') {
-            // Display the first action requested, or show all if multiple
-            const actions = request.form_data?.actionRequested || request.form_data?.action_requested;
-            if (actions && actions.length > 0) {
-                return actions.length === 1
-                    ? `Admin Record: ${actions[0]}`
-                    : `Admin Record: ${actions.join(', ')}`;
-            }
-            return 'Administrative Record Change';
-        } else if (request.program === 'Conversation Partner') {
-            const academicLevel = request.form_data?.academic_level || 'N/A';
-            return `Conversation Partner: ${academicLevel}`;
-        } else if (request.program === 'OPT Request') {
-            const academicLevel = request.form_data?.academic_level || 'N/A';
-            return `OPT Request: ${academicLevel}`;
-        } else if (request.program === 'Document Request') {
-            const documentType = request.form_data?.global_student_document || request.form_data?.undergrad_document || 'N/A';
-            return `Document Request: ${documentType}`;
-        } else if (request.program === 'English Language Program Volunteer') {
-            const academicLevel = request.form_data?.academic_level || 'N/A';
-            return `English Language Volunteer: ${academicLevel}`;
-        } else if (request.program === 'Off Campus Housing Application') {
-            const paymentStatus = request.form_data?.payment_status || 'PENDING';
-            return `Off Campus Housing: ${paymentStatus}`;
-        } else if (request.program === 'Florida Statute 1010.35') {
-            const position = request.form_data?.position || 'N/A';
-            return `Florida Statute 1010.35: ${position}`;
-        } else if (request.program === 'Leave Request') {
-            const leaveType = request.form_data?.leave_type || 'N/A';
-            return `Leave Request: ${leaveType}`;
-        } else if (request.program === 'OPT STEM Extension Reporting') {
-            const reportType = [];
-            if (request.form_data?.standard_opt) reportType.push('Standard OPT');
-            if (request.form_data?.stem_extension) reportType.push('STEM Extension');
-            return `OPT STEM Report: ${reportType.length > 0 ? reportType.join(', ') : 'N/A'}`;
-        } else if (request.program === 'OPT STEM Extension Application') {
-            const academicLevel = request.form_data?.academic_level || 'N/A';
-            return `OPT STEM Application: ${academicLevel}`;
-        } else if (request.program === 'Exit Form') {
-            const departureReason = request.form_data?.departure_reason || 'N/A';
-            return `Exit Form: ${departureReason}`;
-        } else {
-            return request.program;
-        }
-    };
+    // Render request table
+    const renderRequestTable = (requestList, canSelect = true) => (
+        <CTable hover responsive>
+            <CTableHead>
+                <CTableRow>
+                    {canSelect && (
+                        <CTableHeaderCell scope="col">
+                            <input
+                                type="checkbox"
+                                checked={selectedRequests.length === requestList.length && requestList.length > 0}
+                                onChange={() => toggleSelectAll(requestList)}
+                            />
+                        </CTableHeaderCell>
+                    )}
+                    <CTableHeaderCell scope="col">#</CTableHeaderCell>
+                    <CTableHeaderCell scope="col">Student Name</CTableHeaderCell>
+                    <CTableHeaderCell scope="col">Student ID</CTableHeaderCell>
+                    <CTableHeaderCell scope="col">Form Type</CTableHeaderCell>
+                    <CTableHeaderCell scope="col">Submission Date</CTableHeaderCell>
+                    <CTableHeaderCell scope="col">Status</CTableHeaderCell>
+                    <CTableHeaderCell scope="col">Actions</CTableHeaderCell>
+                </CTableRow>
+            </CTableHead>
+            <CTableBody>
+                {requestList.map((request) => (
+                    <CTableRow key={request.id}>
+                        {canSelect && (
+                            <CTableDataCell>
+                                <input
+                                    type="checkbox"
+                                    checked={selectedRequests.includes(request.id)}
+                                    onChange={() => toggleSelection(request.id)}
+                                />
+                            </CTableDataCell>
+                        )}
+                        <CTableHeaderCell scope="row">{request.id}</CTableHeaderCell>
+                        <CTableDataCell>{request.student_name}</CTableDataCell>
+                        <CTableDataCell>{request.student_id}</CTableDataCell>
+                        <CTableDataCell>{formatRequestType(request)}</CTableDataCell>
+                        <CTableDataCell>{new Date(request.submission_date).toLocaleString()}</CTableDataCell>
+                        <CTableDataCell>
+                            <span className={`badge bg-${request.status === 'pending' ? 'warning' : 'success'}`}>
+                                {request.status}
+                            </span>
+                        </CTableDataCell>
+                        <CTableDataCell>
+                            <CButton
+                                size="sm"
+                                color="danger"
+                                className="me-2"
+                                onClick={() => deleteRequest(request)}
+                                disabled={isDeleting}
+                            >
+                                Delete
+                            </CButton>
+                            <CButton
+                                size="sm"
+                                color="primary"
+                                onClick={() => viewRequest(request)}
+                            >
+                                View
+                            </CButton>
+                        </CTableDataCell>
+                    </CTableRow>
+                ))}
+            </CTableBody>
+        </CTable>
+    )
 
     return (
         <CRow>
@@ -501,1166 +471,42 @@ export default function AllRequestsList() {
                         </div>
                     </CCardHeader>
                     <CCardBody>
-                        {error && <CAlert color="danger">{error}</CAlert>}
-                        {deleteSuccess && <CAlert color="success">All requests have been successfully deleted.</CAlert>}
-
+                        {deleteError && <CAlert color="danger">{deleteError}</CAlert>}
                         {loading ? (
                             <div className="d-flex justify-content-center">
                                 <CSpinner color="primary" />
                             </div>
+                        ) : error ? (
+                            <CAlert color="danger">{error}</CAlert>
                         ) : requests.length === 0 ? (
                             <CAlert color="info">No requests found.</CAlert>
                         ) : (
                             <>
                                 <CNav variant="tabs" role="tablist" className="mb-3">
-                                    <CNavItem>
-                                        <CNavLink
-                                            active={activeTab === 1}
-                                            onClick={() => setActiveTab(1)}
-                                            role="tab"
-                                        >
-                                            All Requests ({requests.length})
-                                        </CNavLink>
-                                    </CNavItem>
-                                    <CNavItem>
-                                        <CNavLink
-                                            active={activeTab === 2}
-                                            onClick={() => setActiveTab(2)}
-                                            role="tab"
-                                        >
-                                            I-20 Requests ({i20Requests.length})
-                                        </CNavLink>
-                                    </CNavItem>
-                                    <CNavItem>
-                                        <CNavLink
-                                            active={activeTab === 3}
-                                            onClick={() => setActiveTab(3)}
-                                            role="tab"
-                                        >
-                                            Academic Training ({academicTrainingRequests.length})
-                                        </CNavLink>
-                                    </CNavItem>
-                                    <CNavItem>
-                                        <CNavLink
-                                            active={activeTab === 4}
-                                            onClick={() => setActiveTab(4)}
-                                            role="tab"
-                                        >
-                                            Administrative Record ({administrativeRecordRequests.length})
-                                        </CNavLink>
-                                    </CNavItem>
-                                    <CNavItem>
-                                        <CNavLink
-                                            active={activeTab === 5}
-                                            onClick={() => setActiveTab(5)}
-                                            role="tab"
-                                        >
-                                            Conversation Partner ({conversationPartnerRequests.length})
-                                        </CNavLink>
-                                    </CNavItem>
-                                    <CNavItem>
-                                        <CNavLink
-                                            active={activeTab === 6}
-                                            onClick={() => setActiveTab(6)}
-                                            role="tab"
-                                        >
-                                            OPT Requests ({optRequests.length})
-                                        </CNavLink>
-                                    </CNavItem>
-                                    <CNavItem>
-                                        <CNavLink
-                                            active={activeTab === 7}
-                                            onClick={() => setActiveTab(7)}
-                                            role="tab"
-                                        >
-                                            Document Requests ({documentRequests.length})
-                                        </CNavLink>
-                                    </CNavItem>
-                                    <CNavItem>
-                                        <CNavLink
-                                            active={activeTab === 8}
-                                            onClick={() => setActiveTab(8)}
-                                            role="tab"
-                                        >
-                                            English Language Volunteer ({volunteerRequests.length})
-                                        </CNavLink>
-                                    </CNavItem>
-                                    <CNavItem>
-                                        <CNavLink
-                                            active={activeTab === 9}
-                                            onClick={() => setActiveTab(9)}
-                                            role="tab"
-                                        >
-                                            Off Campus Housing ({housingRequests.length})
-                                        </CNavLink>
-                                    </CNavItem>
-                                    <CNavItem>
-                                        <CNavLink
-                                            active={activeTab === 10}
-                                            onClick={() => setActiveTab(10)}
-                                            role="tab"
-                                        >
-                                            Florida Statute 1010.35 ({floridaStatuteRequests.length})
-                                        </CNavLink>
-                                    </CNavItem>
-                                    <CNavItem>
-                                        <CNavLink
-                                            active={activeTab === 11}
-                                            onClick={() => setActiveTab(11)}
-                                            role="tab"
-                                        >
-                                            Leave Requests ({leaveRequests.length})
-                                        </CNavLink>
-                                    </CNavItem>
-                                    <CNavItem>
-                                        <CNavLink
-                                            active={activeTab === 12}
-                                            onClick={() => setActiveTab(12)}
-                                            role="tab"
-                                        >
-                                            OPT STEM Reports ({optStemReports.length})
-                                        </CNavLink>
-                                    </CNavItem>
-                                    <CNavItem>
-                                        <CNavLink
-                                            active={activeTab === 13}
-                                            onClick={() => setActiveTab(13)}
-                                            role="tab"
-                                        >
-                                            OPT STEM Applications ({optStemApplications.length})
-                                        </CNavLink>
-                                    </CNavItem>
-                                    <CNavItem>
-                                        <CNavLink
-                                            active={activeTab === 14}
-                                            onClick={() => setActiveTab(14)}
-                                            role="tab"
-                                        >
-                                            Exit Forms ({exitFormRequests.length})
-                                        </CNavLink>
-                                    </CNavItem>
+                                    {Object.keys(filteredRequests).map((key, index) => (
+                                        <CNavItem key={key}>
+                                            <CNavLink
+                                                active={activeTab === index + 1}
+                                                onClick={() => setActiveTab(index + 1)}
+                                                role="tab"
+                                            >
+                                                {key} ({filteredRequests[key].length})
+                                            </CNavLink>
+                                        </CNavItem>
+                                    ))}
                                 </CNav>
 
                                 <CTabContent>
-                                    <CTabPane role="tabpanel" visible={activeTab === 1}>
-                                        <CTable hover responsive>
-                                            <CTableHead>
-                                                <CTableRow>
-                                                    <CTableHeaderCell scope="col">
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={selectedRequests.length === requests.length && requests.length > 0}
-                                                            onChange={() => toggleSelectAll(requests)}
-                                                        />
-                                                    </CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">#</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Form Type</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Student Name</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Student ID</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Submission Date</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Status</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Actions</CTableHeaderCell>
-                                                </CTableRow>
-                                            </CTableHead>
-                                            <CTableBody>
-                                                {requests.map((request) => (
-                                                    <CTableRow key={request.id}>
-                                                        <CTableDataCell>
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={selectedRequests.includes(request.id)}
-                                                                onChange={() => toggleSelection(request.id)}
-                                                            />
-                                                        </CTableDataCell>
-                                                        <CTableHeaderCell scope="row">{request.id}</CTableHeaderCell>
-                                                        <CTableDataCell>{getRequestType(request)}</CTableDataCell>
-                                                        <CTableDataCell>{request.student_name}</CTableDataCell>
-                                                        <CTableDataCell>{request.student_id}</CTableDataCell>
-                                                        <CTableDataCell>{formatDate(request.submission_date)}</CTableDataCell>
-                                                        <CTableDataCell>
-                                                            <span className={`badge bg-${request.status === 'pending' ? 'warning' : 'success'}`}>
-                                                                {request.status}
-                                                            </span>
-                                                        </CTableDataCell>
-                                                        <CTableDataCell>
-                                                            <CButton
-                                                                size="sm"
-                                                                color="danger"
-                                                                className="me-2"
-                                                                onClick={() => deleteRequest(request.id, request.program)}
-                                                                disabled={isDeleting}
-                                                            >
-                                                                Delete
-                                                            </CButton>
-                                                            <CButton
-                                                                size="sm"
-                                                                color="primary"
-                                                                onClick={() => viewRequest(request)}
-                                                            >
-                                                                View
-                                                            </CButton>
-                                                        </CTableDataCell>
-                                                    </CTableRow>
-                                                ))}
-                                            </CTableBody>
-                                        </CTable>
-                                    </CTabPane>
-
-                                    <CTabPane role="tabpanel" visible={activeTab === 2}>
-                                        <CTable hover responsive>
-                                            <CTableHead>
-                                                <CTableRow>
-                                                    <CTableHeaderCell scope="col">#</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Student Name</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Student ID</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Program</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Submission Date</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Status</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Actions</CTableHeaderCell>
-                                                </CTableRow>
-                                            </CTableHead>
-                                            <CTableBody>
-                                                {i20Requests.map((request) => (
-                                                    <CTableRow key={request.id}>
-                                                        <CTableHeaderCell scope="row">{request.id}</CTableHeaderCell>
-                                                        <CTableDataCell>{request.student_name}</CTableDataCell>
-                                                        <CTableDataCell>{request.student_id}</CTableDataCell>
-                                                        <CTableDataCell>{request.program}</CTableDataCell>
-                                                        <CTableDataCell>{formatDate(request.submission_date)}</CTableDataCell>
-                                                        <CTableDataCell>
-                                                            <span className={`badge bg-${request.status === 'pending' ? 'warning' : 'success'}`}>
-                                                                {request.status}
-                                                            </span>
-                                                        </CTableDataCell>
-                                                        <CTableDataCell>
-                                                            <CButton
-                                                                size="sm"
-                                                                color="primary"
-                                                                onClick={() => viewRequest(request)}
-                                                            >
-                                                                View
-                                                            </CButton>
-                                                        </CTableDataCell>
-                                                    </CTableRow>
-                                                ))}
-                                            </CTableBody>
-                                        </CTable>
-                                    </CTabPane>
-
-                                    <CTabPane role="tabpanel" visible={activeTab === 3}>
-                                        <CTable hover responsive>
-                                            <CTableHead>
-                                                <CTableRow>
-                                                    <CTableHeaderCell scope="col">
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={selectedRequests.length === academicTrainingRequests.length && academicTrainingRequests.length > 0}
-                                                            onChange={() => toggleSelectAll(academicTrainingRequests)}
-                                                        />
-                                                    </CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">#</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Student Name</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Student ID</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Type</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Submission Date</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Status</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Actions</CTableHeaderCell>
-                                                </CTableRow>
-                                            </CTableHead>
-                                            <CTableBody>
-                                                {academicTrainingRequests.map((request) => (
-                                                    <CTableRow key={request.id}>
-                                                        <CTableDataCell>
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={selectedRequests.includes(request.id)}
-                                                                onChange={() => toggleSelection(request.id)}
-                                                            />
-                                                        </CTableDataCell>
-                                                        <CTableHeaderCell scope="row">{request.id}</CTableHeaderCell>
-                                                        <CTableDataCell>{request.student_name}</CTableDataCell>
-                                                        <CTableDataCell>{request.student_id}</CTableDataCell>
-                                                        <CTableDataCell>
-                                                            {(request.form_data?.completion_type || request.form_data?.completionType) === 'pre' ? 'Pre-Completion' : 'Post-Completion'}
-                                                        </CTableDataCell>
-                                                        <CTableDataCell>{formatDate(request.submission_date)}</CTableDataCell>
-                                                        <CTableDataCell>
-                                                            <span className={`badge bg-${request.status === 'pending' ? 'warning' : 'success'}`}>
-                                                                {request.status}
-                                                            </span>
-                                                        </CTableDataCell>
-                                                        <CTableDataCell>
-                                                            <CButton
-                                                                size="sm"
-                                                                color="danger"
-                                                                className="me-2"
-                                                                onClick={() => deleteRequest(request.id, request.program)}
-                                                                disabled={isDeleting}
-                                                            >
-                                                                Delete
-                                                            </CButton>
-                                                            <CButton
-                                                                size="sm"
-                                                                color="primary"
-                                                                onClick={() => viewRequest(request)}
-                                                            >
-                                                                View
-                                                            </CButton>
-                                                        </CTableDataCell>
-                                                    </CTableRow>
-                                                ))}
-                                            </CTableBody>
-                                        </CTable>
-                                    </CTabPane>
-
-                                    <CTabPane role="tabpanel" visible={activeTab === 4}>
-                                        <CTable hover responsive>
-                                            <CTableHead>
-                                                <CTableRow>
-                                                    <CTableHeaderCell scope="col">#</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Student Name</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Student ID</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Action Requested</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Submission Date</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Status</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Actions</CTableHeaderCell>
-                                                </CTableRow>
-                                            </CTableHead>
-                                            <CTableBody>
-                                                {administrativeRecordRequests.map((request) => (
-                                                    <CTableRow key={request.id}>
-                                                        <CTableHeaderCell scope="row">{request.id}</CTableHeaderCell>
-                                                        <CTableDataCell>{request.student_name}</CTableDataCell>
-                                                        <CTableDataCell>{request.student_id}</CTableDataCell>
-                                                        <CTableDataCell>
-                                                            {request.form_data?.actionRequested?.length > 0
-                                                                ? request.form_data.actionRequested[0]
-                                                                : 'N/A'}
-                                                        </CTableDataCell>
-                                                        <CTableDataCell>{formatDate(request.submission_date)}</CTableDataCell>
-                                                        <CTableDataCell>
-                                                            <span className={`badge bg-${request.status === 'pending' ? 'warning' : 'success'}`}>
-                                                                {request.status}
-                                                            </span>
-                                                        </CTableDataCell>
-                                                        <CTableDataCell>
-                                                            <CButton
-                                                                size="sm"
-                                                                color="primary"
-                                                                onClick={() => viewRequest(request)}
-                                                            >
-                                                                View
-                                                            </CButton>
-                                                        </CTableDataCell>
-                                                    </CTableRow>
-                                                ))}
-                                            </CTableBody>
-                                        </CTable>
-                                    </CTabPane>
-
-                                    <CTabPane role="tabpanel" visible={activeTab === 5}>
-                                        <CTable hover responsive>
-                                            <CTableHead>
-                                                <CTableRow>
-                                                    <CTableHeaderCell scope="col">
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={selectedRequests.length === conversationPartnerRequests.length && conversationPartnerRequests.length > 0}
-                                                            onChange={() => toggleSelectAll(conversationPartnerRequests)}
-                                                        />
-                                                    </CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">#</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Student Name</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Student ID</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Academic Level</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Major</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Submission Date</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Status</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Actions</CTableHeaderCell>
-                                                </CTableRow>
-                                            </CTableHead>
-                                            <CTableBody>
-                                                {conversationPartnerRequests.map((request) => (
-                                                    <CTableRow key={request.id}>
-                                                        <CTableDataCell>
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={selectedRequests.includes(request.id)}
-                                                                onChange={() => toggleSelection(request.id)}
-                                                            />
-                                                        </CTableDataCell>
-                                                        <CTableHeaderCell scope="row">{request.id}</CTableHeaderCell>
-                                                        <CTableDataCell>{request.student_name}</CTableDataCell>
-                                                        <CTableDataCell>{request.student_id}</CTableDataCell>
-                                                        <CTableDataCell>
-                                                            {request.form_data?.academic_level || 'N/A'}
-                                                        </CTableDataCell>
-                                                        <CTableDataCell>
-                                                            {request.form_data?.major || 'N/A'}
-                                                        </CTableDataCell>
-                                                        <CTableDataCell>{formatDate(request.submission_date)}</CTableDataCell>
-                                                        <CTableDataCell>
-                                                            <span className={`badge bg-${request.status === 'pending' ? 'warning' : 'success'}`}>
-                                                                {request.status}
-                                                            </span>
-                                                        </CTableDataCell>
-                                                        <CTableDataCell>
-                                                            <CButton
-                                                                size="sm"
-                                                                color="danger"
-                                                                className="me-2"
-                                                                onClick={() => deleteRequest(request.id, request.program)}
-                                                                disabled={isDeleting}
-                                                            >
-                                                                Delete
-                                                            </CButton>
-                                                            <CButton
-                                                                size="sm"
-                                                                color="primary"
-                                                                onClick={() => viewRequest(request)}
-                                                            >
-                                                                View
-                                                            </CButton>
-                                                        </CTableDataCell>
-                                                    </CTableRow>
-                                                ))}
-                                            </CTableBody>
-                                        </CTable>
-                                    </CTabPane>
-
-                                    <CTabPane role="tabpanel" visible={activeTab === 6}>
-                                        <CTable hover responsive>
-                                            <CTableHead>
-                                                <CTableRow>
-                                                    <CTableHeaderCell scope="col">
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={selectedRequests.length === optRequests.length && optRequests.length > 0}
-                                                            onChange={() => toggleSelectAll(optRequests)}
-                                                        />
-                                                    </CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">#</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Student Name</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Student ID</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Academic Level</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Academic Program</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Submission Date</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Status</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Actions</CTableHeaderCell>
-                                                </CTableRow>
-                                            </CTableHead>
-                                            <CTableBody>
-                                                {optRequests.map((request) => (
-                                                    <CTableRow key={request.id}>
-                                                        <CTableDataCell>
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={selectedRequests.includes(request.id)}
-                                                                onChange={() => toggleSelection(request.id)}
-                                                            />
-                                                        </CTableDataCell>
-                                                        <CTableHeaderCell scope="row">{request.id}</CTableHeaderCell>
-                                                        <CTableDataCell>{request.student_name}</CTableDataCell>
-                                                        <CTableDataCell>{request.student_id}</CTableDataCell>
-                                                        <CTableDataCell>
-                                                            {request.form_data?.academic_level || 'N/A'}
-                                                        </CTableDataCell>
-                                                        <CTableDataCell>
-                                                            {request.form_data?.academic_program || 'N/A'}
-                                                        </CTableDataCell>
-                                                        <CTableDataCell>{formatDate(request.submission_date)}</CTableDataCell>
-                                                        <CTableDataCell>
-                                                            <span className={`badge bg-${request.status === 'pending' ? 'warning' : 'success'}`}>
-                                                                {request.status}
-                                                            </span>
-                                                        </CTableDataCell>
-                                                        <CTableDataCell>
-                                                            <CButton
-                                                                size="sm"
-                                                                color="danger"
-                                                                className="me-2"
-                                                                onClick={() => deleteRequest(request.id, request.program)}
-                                                                disabled={isDeleting}
-                                                            >
-                                                                Delete
-                                                            </CButton>
-                                                            <CButton
-                                                                size="sm"
-                                                                color="primary"
-                                                                onClick={() => viewRequest(request)}
-                                                            >
-                                                                View
-                                                            </CButton>
-                                                        </CTableDataCell>
-                                                    </CTableRow>
-                                                ))}
-                                            </CTableBody>
-                                        </CTable>
-                                    </CTabPane>
-
-                                    <CTabPane role="tabpanel" visible={activeTab === 7}>
-                                        <CTable hover responsive>
-                                            <CTableHead>
-                                                <CTableRow>
-                                                    <CTableHeaderCell scope="col">
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={selectedRequests.length === documentRequests.length && documentRequests.length > 0}
-                                                            onChange={() => toggleSelectAll(documentRequests)}
-                                                        />
-                                                    </CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">#</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Student Name</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Student ID</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Document Type</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Delivery Format</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Submission Date</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Status</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Actions</CTableHeaderCell>
-                                                </CTableRow>
-                                            </CTableHead>
-                                            <CTableBody>
-                                                {documentRequests.map((request) => (
-                                                    <CTableRow key={request.id}>
-                                                        <CTableDataCell>
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={selectedRequests.includes(request.id)}
-                                                                onChange={() => toggleSelection(request.id)}
-                                                            />
-                                                        </CTableDataCell>
-                                                        <CTableHeaderCell scope="row">{request.id}</CTableHeaderCell>
-                                                        <CTableDataCell>{request.student_name}</CTableDataCell>
-                                                        <CTableDataCell>{request.student_id}</CTableDataCell>
-                                                        <CTableDataCell>
-                                                            {request.form_data?.global_student_document || request.form_data?.undergrad_document || 'N/A'}
-                                                        </CTableDataCell>
-                                                        <CTableDataCell>
-                                                            {request.form_data?.format || 'N/A'}
-                                                        </CTableDataCell>
-                                                        <CTableDataCell>{formatDate(request.submission_date)}</CTableDataCell>
-                                                        <CTableDataCell>
-                                                            <span className={`badge bg-${request.status === 'pending' ? 'warning' : 'success'}`}>
-                                                                {request.status}
-                                                            </span>
-                                                        </CTableDataCell>
-                                                        <CTableDataCell>
-                                                            <CButton
-                                                                size="sm"
-                                                                color="danger"
-                                                                className="me-2"
-                                                                onClick={() => deleteRequest(request.id, request.program)}
-                                                                disabled={isDeleting}
-                                                            >
-                                                                Delete
-                                                            </CButton>
-                                                            <CButton
-                                                                size="sm"
-                                                                color="primary"
-                                                                onClick={() => viewRequest(request)}
-                                                            >
-                                                                View
-                                                            </CButton>
-                                                        </CTableDataCell>
-                                                    </CTableRow>
-                                                ))}
-                                            </CTableBody>
-                                        </CTable>
-                                    </CTabPane>
-
-                                    <CTabPane role="tabpanel" visible={activeTab === 8}>
-                                        <CTable hover responsive>
-                                            <CTableHead>
-                                                <CTableRow>
-                                                    <CTableHeaderCell scope="col">
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={selectedRequests.length === volunteerRequests.length && volunteerRequests.length > 0}
-                                                            onChange={() => toggleSelectAll(volunteerRequests)}
-                                                        />
-                                                    </CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">#</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Student Name</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Student ID</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Academic Level</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Position</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Submission Date</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Status</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Actions</CTableHeaderCell>
-                                                </CTableRow>
-                                            </CTableHead>
-                                            <CTableBody>
-                                                {volunteerRequests.map((request) => (
-                                                    <CTableRow key={request.id}>
-                                                        <CTableDataCell>
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={selectedRequests.includes(request.id)}
-                                                                onChange={() => toggleSelection(request.id)}
-                                                            />
-                                                        </CTableDataCell>
-                                                        <CTableHeaderCell scope="row">{request.id}</CTableHeaderCell>
-                                                        <CTableDataCell>{request.student_name}</CTableDataCell>
-                                                        <CTableDataCell>{request.student_id}</CTableDataCell>
-                                                        <CTableDataCell>
-                                                            {request.form_data?.academic_level || 'N/A'}
-                                                        </CTableDataCell>
-                                                        <CTableDataCell>
-                                                            {request.form_data?.position_intensive_english && request.form_data?.position_online_english
-                                                                ? 'Both'
-                                                                : request.form_data?.position_intensive_english
-                                                                    ? 'Intensive English'
-                                                                    : request.form_data?.position_online_english
-                                                                        ? 'Online English'
-                                                                        : 'N/A'}
-                                                        </CTableDataCell>
-                                                        <CTableDataCell>{formatDate(request.submission_date)}</CTableDataCell>
-                                                        <CTableDataCell>
-                                                            <span className={`badge bg-${request.status === 'pending' ? 'warning' : 'success'}`}>
-                                                                {request.status}
-                                                            </span>
-                                                        </CTableDataCell>
-                                                        <CTableDataCell>
-                                                            <CButton
-                                                                size="sm"
-                                                                color="danger"
-                                                                className="me-2"
-                                                                onClick={() => deleteRequest(request.id, request.program)}
-                                                                disabled={isDeleting}
-                                                            >
-                                                                Delete
-                                                            </CButton>
-                                                            <CButton
-                                                                size="sm"
-                                                                color="primary"
-                                                                onClick={() => viewRequest(request)}
-                                                            >
-                                                                View
-                                                            </CButton>
-                                                        </CTableDataCell>
-                                                    </CTableRow>
-                                                ))}
-                                            </CTableBody>
-                                        </CTable>
-                                    </CTabPane>
-
-                                    <CTabPane role="tabpanel" visible={activeTab === 9}>
-                                        <CTable hover responsive>
-                                            <CTableHead>
-                                                <CTableRow>
-                                                    <CTableHeaderCell scope="col">
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={selectedRequests.length === housingRequests.length && housingRequests.length > 0}
-                                                            onChange={() => toggleSelectAll(housingRequests)}
-                                                        />
-                                                    </CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">#</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Student Name</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Student ID</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Program Type</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Payment Status</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Submission Date</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Status</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Actions</CTableHeaderCell>
-                                                </CTableRow>
-                                            </CTableHead>
-                                            <CTableBody>
-                                                {housingRequests.map((request) => (
-                                                    <CTableRow key={request.id}>
-                                                        <CTableDataCell>
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={selectedRequests.includes(request.id)}
-                                                                onChange={() => toggleSelection(request.id)}
-                                                            />
-                                                        </CTableDataCell>
-                                                        <CTableHeaderCell scope="row">{request.id}</CTableHeaderCell>
-                                                        <CTableDataCell>{request.student_name}</CTableDataCell>
-                                                        <CTableDataCell>{request.student_id}</CTableDataCell>
-                                                        <CTableDataCell>
-                                                            {request.form_data?.program_type || 'N/A'}
-                                                        </CTableDataCell>
-                                                        <CTableDataCell>
-                                                            <span className={`badge bg-${request.form_data?.payment_status === 'PAID' ? 'success' : 'warning'}`}>
-                                                                {request.form_data?.payment_status || 'PENDING'}
-                                                            </span>
-                                                        </CTableDataCell>
-                                                        <CTableDataCell>{formatDate(request.submission_date)}</CTableDataCell>
-                                                        <CTableDataCell>
-                                                            <span className={`badge bg-${request.status === 'pending' ? 'warning' : 'success'}`}>
-                                                                {request.status}
-                                                            </span>
-                                                        </CTableDataCell>
-                                                        <CTableDataCell>
-                                                            <CButton
-                                                                size="sm"
-                                                                color="danger"
-                                                                className="me-2"
-                                                                onClick={() => deleteRequest(request.id, request.program)}
-                                                                disabled={isDeleting}
-                                                            >
-                                                                Delete
-                                                            </CButton>
-                                                            <CButton
-                                                                size="sm"
-                                                                color="primary"
-                                                                onClick={() => viewRequest(request)}
-                                                            >
-                                                                View
-                                                            </CButton>
-                                                        </CTableDataCell>
-                                                    </CTableRow>
-                                                ))}
-                                            </CTableBody>
-                                        </CTable>
-                                    </CTabPane>
-
-                                    <CTabPane role="tabpanel" visible={activeTab === 10}>
-                                        <CTable hover responsive>
-                                            <CTableHead>
-                                                <CTableRow>
-                                                    <CTableHeaderCell scope="col">
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={selectedRequests.length === floridaStatuteRequests.length && floridaStatuteRequests.length > 0}
-                                                            onChange={() => toggleSelectAll(floridaStatuteRequests)}
-                                                        />
-                                                    </CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">#</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Student Name</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Student ID</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Position</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">College</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Submission Date</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Status</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Actions</CTableHeaderCell>
-                                                </CTableRow>
-                                            </CTableHead>
-                                            <CTableBody>
-                                                {floridaStatuteRequests.map((request) => (
-                                                    <CTableRow key={request.id}>
-                                                        <CTableDataCell>
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={selectedRequests.includes(request.id)}
-                                                                onChange={() => toggleSelection(request.id)}
-                                                            />
-                                                        </CTableDataCell>
-                                                        <CTableHeaderCell scope="row">{request.id}</CTableHeaderCell>
-                                                        <CTableDataCell>{request.student_name}</CTableDataCell>
-                                                        <CTableDataCell>{request.student_id}</CTableDataCell>
-                                                        <CTableDataCell>
-                                                            {request.form_data?.position || 'N/A'}
-                                                        </CTableDataCell>
-                                                        <CTableDataCell>
-                                                            {request.form_data?.college || 'N/A'}
-                                                        </CTableDataCell>
-                                                        <CTableDataCell>{formatDate(request.submission_date)}</CTableDataCell>
-                                                        <CTableDataCell>
-                                                            <span className={`badge bg-${request.status === 'pending' ? 'warning' : 'success'}`}>
-                                                                {request.status}
-                                                            </span>
-                                                        </CTableDataCell>
-                                                        <CTableDataCell>
-                                                            <CButton
-                                                                size="sm"
-                                                                color="danger"
-                                                                className="me-2"
-                                                                onClick={() => deleteRequest(request.id, request.program)}
-                                                                disabled={isDeleting}
-                                                            >
-                                                                Delete
-                                                            </CButton>
-                                                            <CButton
-                                                                size="sm"
-                                                                color="primary"
-                                                                onClick={() => viewRequest(request)}
-                                                            >
-                                                                View
-                                                            </CButton>
-                                                        </CTableDataCell>
-                                                    </CTableRow>
-                                                ))}
-                                            </CTableBody>
-                                        </CTable>
-                                    </CTabPane>
-
-                                    <CTabPane role="tabpanel" visible={activeTab === 11}>
-                                        <CTable hover responsive>
-                                            <CTableHead>
-                                                <CTableRow>
-                                                    <CTableHeaderCell scope="col">
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={selectedRequests.length === leaveRequests.length && leaveRequests.length > 0}
-                                                            onChange={() => toggleSelectAll(leaveRequests)}
-                                                        />
-                                                    </CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">#</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Employee Name</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Employee ID</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Leave Type</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">From Date</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">To Date</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Submission Date</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Status</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Actions</CTableHeaderCell>
-                                                </CTableRow>
-                                            </CTableHead>
-                                            <CTableBody>
-                                                {leaveRequests.map((request) => (
-                                                    <CTableRow key={request.id}>
-                                                        <CTableDataCell>
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={selectedRequests.includes(request.id)}
-                                                                onChange={() => toggleSelection(request.id)}
-                                                            />
-                                                        </CTableDataCell>
-                                                        <CTableHeaderCell scope="row">{request.id}</CTableHeaderCell>
-                                                        <CTableDataCell>{request.student_name}</CTableDataCell>
-                                                        <CTableDataCell>{request.student_id}</CTableDataCell>
-                                                        <CTableDataCell>
-                                                            {request.form_data?.leave_type || 'N/A'}
-                                                        </CTableDataCell>
-                                                        <CTableDataCell>
-                                                            {request.form_data?.from_date || 'N/A'} {request.form_data?.from_time || ''}
-                                                        </CTableDataCell>
-                                                        <CTableDataCell>
-                                                            {request.form_data?.to_date || 'N/A'} {request.form_data?.to_time || ''}
-                                                        </CTableDataCell>
-                                                        <CTableDataCell>{formatDate(request.submission_date)}</CTableDataCell>
-                                                        <CTableDataCell>
-                                                            <span className={`badge bg-${request.status === 'pending' ? 'warning' : 'success'}`}>
-                                                                {request.status}
-                                                            </span>
-                                                        </CTableDataCell>
-                                                        <CTableDataCell>
-                                                            <CButton
-                                                                size="sm"
-                                                                color="danger"
-                                                                className="me-2"
-                                                                onClick={() => deleteRequest(request.id, request.program)}
-                                                                disabled={isDeleting}
-                                                            >
-                                                                Delete
-                                                            </CButton>
-                                                            <CButton
-                                                                size="sm"
-                                                                color="primary"
-                                                                onClick={() => viewRequest(request)}
-                                                            >
-                                                                View
-                                                            </CButton>
-                                                        </CTableDataCell>
-                                                    </CTableRow>
-                                                ))}
-                                            </CTableBody>
-                                        </CTable>
-                                    </CTabPane>
-
-                                    <CTabPane role="tabpanel" visible={activeTab === 12}>
-                                        <CTable hover responsive>
-                                            <CTableHead>
-                                                <CTableRow>
-                                                    <CTableHeaderCell scope="col">
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={selectedRequests.length === optStemReports.length && optStemReports.length > 0}
-                                                            onChange={() => toggleSelectAll(optStemReports)}
-                                                        />
-                                                    </CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">#</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Student Name</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Student ID</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">SEVIS ID</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Report Type</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Submission Date</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Status</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Actions</CTableHeaderCell>
-                                                </CTableRow>
-                                            </CTableHead>
-                                            <CTableBody>
-                                                {optStemReports.map((request) => (
-                                                    <CTableRow key={request.id}>
-                                                        <CTableDataCell>
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={selectedRequests.includes(request.id)}
-                                                                onChange={() => toggleSelection(request.id)}
-                                                            />
-                                                        </CTableDataCell>
-                                                        <CTableHeaderCell scope="row">{request.id}</CTableHeaderCell>
-                                                        <CTableDataCell>{request.student_name}</CTableDataCell>
-                                                        <CTableDataCell>{request.student_id}</CTableDataCell>
-                                                        <CTableDataCell>
-                                                            {request.form_data?.sevis_id || 'N/A'}
-                                                        </CTableDataCell>
-                                                        <CTableDataCell>
-                                                            {(() => {
-                                                                const types = [];
-                                                                if (request.form_data?.standard_opt) types.push('Standard OPT');
-                                                                if (request.form_data?.stem_extension) types.push('STEM Extension');
-                                                                return types.length > 0 ? types.join(', ') : 'N/A';
-                                                            })()}
-                                                        </CTableDataCell>
-                                                        <CTableDataCell>{formatDate(request.submission_date)}</CTableDataCell>
-                                                        <CTableDataCell>
-                                                            <span className={`badge bg-${request.status === 'pending' ? 'warning' : 'success'}`}>
-                                                                {request.status}
-                                                            </span>
-                                                        </CTableDataCell>
-                                                        <CTableDataCell>
-                                                            <CButton
-                                                                size="sm"
-                                                                color="danger"
-                                                                className="me-2"
-                                                                onClick={() => deleteRequest(request.id, request.program)}
-                                                                disabled={isDeleting}
-                                                            >
-                                                                Delete
-                                                            </CButton>
-                                                            <CButton
-                                                                size="sm"
-                                                                color="primary"
-                                                                onClick={() => viewRequest(request)}
-                                                            >
-                                                                View
-                                                            </CButton>
-                                                        </CTableDataCell>
-                                                    </CTableRow>
-                                                ))}
-                                            </CTableBody>
-                                        </CTable>
-                                    </CTabPane>
-
-                                    <CTabPane role="tabpanel" visible={activeTab === 13}>
-                                        <CTable hover responsive>
-                                            <CTableHead>
-                                                <CTableRow>
-                                                    <CTableHeaderCell scope="col">
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={selectedRequests.length === optStemApplications.length && optStemApplications.length > 0}
-                                                            onChange={() => toggleSelectAll(optStemApplications)}
-                                                        />
-                                                    </CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">#</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Student Name</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Student ID</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Academic Level</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Academic Program</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Submission Date</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Status</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Actions</CTableHeaderCell>
-                                                </CTableRow>
-                                            </CTableHead>
-                                            <CTableBody>
-                                                {optStemApplications.map((request) => (
-                                                    <CTableRow key={request.id}>
-                                                        <CTableDataCell>
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={selectedRequests.includes(request.id)}
-                                                                onChange={() => toggleSelection(request.id)}
-                                                            />
-                                                        </CTableDataCell>
-                                                        <CTableHeaderCell scope="row">{request.id}</CTableHeaderCell>
-                                                        <CTableDataCell>{request.student_name}</CTableDataCell>
-                                                        <CTableDataCell>{request.student_id}</CTableDataCell>
-                                                        <CTableDataCell>
-                                                            {request.form_data?.academic_level || 'N/A'}
-                                                        </CTableDataCell>
-                                                        <CTableDataCell>
-                                                            {request.form_data?.academic_program || 'N/A'}
-                                                        </CTableDataCell>
-                                                        <CTableDataCell>{formatDate(request.submission_date)}</CTableDataCell>
-                                                        <CTableDataCell>
-                                                            <span className={`badge bg-${request.status === 'pending' ? 'warning' : 'success'}`}>
-                                                                {request.status}
-                                                            </span>
-                                                        </CTableDataCell>
-                                                        <CTableDataCell>
-                                                            <CButton
-                                                                size="sm"
-                                                                color="danger"
-                                                                className="me-2"
-                                                                onClick={() => deleteRequest(request.id, request.program)}
-                                                                disabled={isDeleting}
-                                                            >
-                                                                Delete
-                                                            </CButton>
-                                                            <CButton
-                                                                size="sm"
-                                                                color="primary"
-                                                                onClick={() => viewRequest(request)}
-                                                            >
-                                                                View
-                                                            </CButton>
-                                                        </CTableDataCell>
-                                                    </CTableRow>
-                                                ))}
-                                            </CTableBody>
-                                        </CTable>
-                                    </CTabPane>
-
-                                    <CTabPane role="tabpanel" visible={activeTab === 14}>
-                                        <CTable hover responsive>
-                                            <CTableHead>
-                                                <CTableRow>
-                                                    <CTableHeaderCell scope="col">
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={selectedRequests.length === exitFormRequests.length && exitFormRequests.length > 0}
-                                                            onChange={() => toggleSelectAll(exitFormRequests)}
-                                                        />
-                                                    </CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">#</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Student Name</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Student ID</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Departure Reason</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Departure Date</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Submission Date</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Status</CTableHeaderCell>
-                                                    <CTableHeaderCell scope="col">Actions</CTableHeaderCell>
-                                                </CTableRow>
-                                            </CTableHead>
-                                            <CTableBody>
-                                                {exitFormRequests.map((request) => (
-                                                    <CTableRow key={request.id}>
-                                                        <CTableDataCell>
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={selectedRequests.includes(request.id)}
-                                                                onChange={() => toggleSelection(request.id)}
-                                                            />
-                                                        </CTableDataCell>
-                                                        <CTableHeaderCell scope="row">{request.id}</CTableHeaderCell>
-                                                        <CTableDataCell>{request.student_name}</CTableDataCell>
-                                                        <CTableDataCell>{request.student_id}</CTableDataCell>
-                                                        <CTableDataCell>
-                                                            {request.form_data?.departure_reason || 'N/A'}
-                                                        </CTableDataCell>
-                                                        <CTableDataCell>
-                                                            {request.form_data?.departure_date || 'N/A'}
-                                                        </CTableDataCell>
-                                                        <CTableDataCell>{formatDate(request.submission_date)}</CTableDataCell>
-                                                        <CTableDataCell>
-                                                            <span className={`badge bg-${request.status === 'pending' ? 'warning' : 'success'}`}>
-                                                                {request.status}
-                                                            </span>
-                                                        </CTableDataCell>
-                                                        <CTableDataCell>
-                                                            <CButton
-                                                                size="sm"
-                                                                color="danger"
-                                                                className="me-2"
-                                                                onClick={() => deleteRequest(request.id, request.program)}
-                                                                disabled={isDeleting}
-                                                            >
-                                                                Delete
-                                                            </CButton>
-                                                            <CButton
-                                                                size="sm"
-                                                                color="primary"
-                                                                onClick={() => viewRequest(request)}
-                                                            >
-                                                                View
-                                                            </CButton>
-                                                        </CTableDataCell>
-                                                    </CTableRow>
-                                                ))}
-                                            </CTableBody>
-                                        </CTable>
-                                    </CTabPane>
-                                </CTabContent>
-
-                                <h4 className="mt-4">Detailed Request Data</h4>
-                                <CAccordion>
-                                    {requests.map((request) => (
-                                        <CAccordionItem key={request.id} itemKey={request.id}>
-                                            <CAccordionHeader>
-                                                {request.program === 'Academic Training'
-                                                    ? 'Academic Training'
-                                                    : request.program === 'Administrative Record Change'
-                                                        ? 'Administrative Record'
-                                                        : request.program === 'Conversation Partner'
-                                                            ? 'Conversation Partner'
-                                                            : request.program === 'OPT Request'
-                                                                ? 'OPT Request'
-                                                                : request.program === 'Document Request'
-                                                                    ? 'Document Request'
-                                                                    : request.program === 'English Language Program Volunteer'
-                                                                        ? 'English Language Volunteer'
-                                                                        : request.program === 'Off Campus Housing Application'
-                                                                            ? 'Off Campus Housing'
-                                                                            : request.program === 'Florida Statute 1010.35'
-                                                                                ? 'Florida Statute 1010.35'
-                                                                                : request.program === 'Leave Request'
-                                                                                    ? 'Leave Request'
-                                                                                    : request.program === 'OPT STEM Extension Reporting'
-                                                                                        ? 'OPT STEM Extension Report'
-                                                                                        : request.program === 'OPT STEM Extension Application'
-                                                                                            ? 'OPT STEM Extension Application'
-                                                                                            : request.program === 'Exit Form'
-                                                                                                ? 'Exit Form'
-                                                                                                : 'I-20'} Request #{request.id} - {request.student_name}
-                                            </CAccordionHeader>
-                                            <CAccordionBody>
-                                                <h5>Basic Information</h5>
-                                                <CTable small>
-                                                    <CTableBody>
-                                                        <CTableRow>
-                                                            <CTableHeaderCell>Form Type</CTableHeaderCell>
-                                                            <CTableDataCell>{getRequestType(request)}</CTableDataCell>
-                                                        </CTableRow>
-                                                        <CTableRow>
-                                                            <CTableHeaderCell>Student Name</CTableHeaderCell>
-                                                            <CTableDataCell>{request.student_name}</CTableDataCell>
-                                                        </CTableRow>
-                                                        <CTableRow>
-                                                            <CTableHeaderCell>Student ID</CTableHeaderCell>
-                                                            <CTableDataCell>{request.student_id}</CTableDataCell>
-                                                        </CTableRow>
-                                                        <CTableRow>
-                                                            <CTableHeaderCell>Submission Date</CTableHeaderCell>
-                                                            <CTableDataCell>{formatDate(request.submission_date)}</CTableDataCell>
-                                                        </CTableRow>
-                                                        <CTableRow>
-                                                            <CTableHeaderCell>Status</CTableHeaderCell>
-                                                            <CTableDataCell>{request.status}</CTableDataCell>
-                                                        </CTableRow>
-                                                    </CTableBody>
-                                                </CTable>
-
-                                                <h5 className="mt-4">Complete Form Data</h5>
-                                                {request.form_data ? (
-                                                    <div className="json-data-container p-3 rounded"
-                                                        style={{
-                                                            backgroundColor: 'var(--cui-dark)',
-                                                            border: '1px solid var(--cui-border-color)'
-                                                        }}>
-                                                        <pre
-                                                            style={{
-                                                                whiteSpace: 'pre-wrap',
-                                                                color: 'var(--cui-body-color)',
-                                                                backgroundColor: 'transparent',
-                                                                fontFamily: 'var(--cui-font-monospace)',
-                                                                fontSize: '0.9rem',
-                                                                overflowX: 'auto',
-                                                                margin: 0
-                                                            }}
-                                                            dangerouslySetInnerHTML={{ __html: formatJSON(request.form_data) }}
-                                                        ></pre>
-                                                    </div>
-                                                ) : (
-                                                    <CAlert color="warning">No detailed form data available</CAlert>
-                                                )}
-                                            </CAccordionBody>
-                                        </CAccordionItem>
+                                    {Object.entries(filteredRequests).map(([key, requestList], index) => (
+                                        <CTabPane
+                                            key={key}
+                                            role="tabpanel"
+                                            visible={activeTab === index + 1}
+                                        >
+                                            {renderRequestTable(requestList)}
+                                        </CTabPane>
                                     ))}
-                                </CAccordion>
+                                </CTabContent>
                             </>
                         )}
                     </CCardBody>
@@ -1673,146 +519,80 @@ export default function AllRequestsList() {
                     <CModalTitle>
                         {selectedRequest && (
                             <>
-                                {selectedRequest.program === 'Academic Training'
-                                    ? 'Academic Training Request'
-                                    : selectedRequest.program === 'Administrative Record Change'
-                                        ? 'Administrative Record Change'
-                                        : selectedRequest.program === 'Conversation Partner'
-                                            ? 'Conversation Partner Application'
-                                            : selectedRequest.program === 'OPT Request'
-                                                ? 'OPT Request Application'
-                                                : selectedRequest.program === 'Document Request'
-                                                    ? 'Document Request'
-                                                    : selectedRequest.program === 'English Language Program Volunteer'
-                                                        ? 'English Language Program Volunteer'
-                                                        : selectedRequest.program === 'Off Campus Housing Application'
-                                                            ? 'Off Campus Housing Application'
-                                                            : selectedRequest.program === 'Florida Statute 1010.35'
-                                                                ? 'Florida Statute 1010.35 Request'
-                                                                : selectedRequest.program === 'Leave Request'
-                                                                    ? 'Leave Request'
-                                                                    : selectedRequest.program === 'OPT STEM Extension Reporting'
-                                                                        ? 'OPT STEM Extension Report'
-                                                                        : selectedRequest.program === 'OPT STEM Extension Application'
-                                                                            ? 'OPT STEM Extension Application'
-                                                                            : selectedRequest.program === 'Exit Form'
-                                                                                ? 'Exit Form'
-                                                                                : 'I-20 Request'} #{selectedRequest.id}
+                                {formatRequestType(selectedRequest)} #{selectedRequest.id}
                             </>
                         )}
                     </CModalTitle>
                 </CModalHeader>
-                <CModalBody>
-                    {selectedRequest && (
-                        <>
-                            <h5 className="border-bottom pb-2 mb-3">Basic Information</h5>
-                            <CTable small bordered>
-                                <CTableBody>
-                                    <CTableRow>
-                                        <CTableHeaderCell style={{ width: '30%' }}>Request ID</CTableHeaderCell>
-                                        <CTableDataCell>{selectedRequest.id}</CTableDataCell>
-                                    </CTableRow>
-                                    <CTableRow>
-                                        <CTableHeaderCell>Form Type</CTableHeaderCell>
-                                        <CTableDataCell>{getRequestType(selectedRequest)}</CTableDataCell>
-                                    </CTableRow>
-                                    <CTableRow>
-                                        <CTableHeaderCell>Student Name</CTableHeaderCell>
-                                        <CTableDataCell>{selectedRequest.student_name}</CTableDataCell>
-                                    </CTableRow>
-                                    <CTableRow>
-                                        <CTableHeaderCell>Student ID</CTableHeaderCell>
-                                        <CTableDataCell>{selectedRequest.student_id}</CTableDataCell>
-                                    </CTableRow>
-                                    <CTableRow>
-                                        <CTableHeaderCell>Program</CTableHeaderCell>
-                                        <CTableDataCell>{selectedRequest.program}</CTableDataCell>
-                                    </CTableRow>
-                                    <CTableRow>
-                                        <CTableHeaderCell>Submission Date</CTableHeaderCell>
-                                        <CTableDataCell>{formatDate(selectedRequest.submission_date)}</CTableDataCell>
-                                    </CTableRow>
-                                    <CTableRow>
-                                        <CTableHeaderCell>Status</CTableHeaderCell>
-                                        <CTableDataCell>
-                                            <span className={`badge bg-${selectedRequest.status === 'pending' ? 'warning' : 'success'}`}>
-                                                {selectedRequest.status}
-                                            </span>
-                                        </CTableDataCell>
-                                    </CTableRow>
-                                    {selectedRequest.program === 'Academic Training' && selectedRequest.form_data && (
-                                        <>
-                                            {selectedRequest.form_data.offer_letter_path && (
-                                                <CTableRow>
-                                                    <CTableHeaderCell>Offer Letter</CTableHeaderCell>
-                                                    <CTableDataCell>
-                                                        <code>{selectedRequest.form_data.offer_letter_path}</code>
-                                                    </CTableDataCell>
-                                                </CTableRow>
-                                            )}
-                                            {selectedRequest.form_data.training_authorization_path && (
-                                                <CTableRow>
-                                                    <CTableHeaderCell>Training Authorization</CTableHeaderCell>
-                                                    <CTableDataCell>
-                                                        <code>{selectedRequest.form_data.training_authorization_path}</code>
-                                                    </CTableDataCell>
-                                                </CTableRow>
-                                            )}
-                                        </>
-                                    )}
-                                </CTableBody>
-                            </CTable>
+                {selectedRequest && (
+                    <CModalBody>
+                        <h5 className="border-bottom pb-2 mb-3">Request Details</h5>
+                        <CTable small bordered>
+                            <CTableBody>
+                                <CTableRow>
+                                    <CTableHeaderCell>ID</CTableHeaderCell>
+                                    <CTableDataCell>{selectedRequest.id}</CTableDataCell>
+                                </CTableRow>
+                                <CTableRow>
+                                    <CTableHeaderCell>Type</CTableHeaderCell>
+                                    <CTableDataCell>{formatRequestType(selectedRequest)}</CTableDataCell>
+                                </CTableRow>
+                                <CTableRow>
+                                    <CTableHeaderCell>Student Name</CTableHeaderCell>
+                                    <CTableDataCell>{selectedRequest.student_name}</CTableDataCell>
+                                </CTableRow>
+                                <CTableRow>
+                                    <CTableHeaderCell>Student ID</CTableHeaderCell>
+                                    <CTableDataCell>{selectedRequest.student_id}</CTableDataCell>
+                                </CTableRow>
+                                <CTableRow>
+                                    <CTableHeaderCell>Submission Date</CTableHeaderCell>
+                                    <CTableDataCell>{new Date(selectedRequest.submission_date).toLocaleString()}</CTableDataCell>
+                                </CTableRow>
+                                <CTableRow>
+                                    <CTableHeaderCell>Status</CTableHeaderCell>
+                                    <CTableDataCell>
+                                        <span className={`badge bg-${selectedRequest.status === 'pending' ? 'warning' : 'success'}`}>
+                                            {selectedRequest.status}
+                                        </span>
+                                    </CTableDataCell>
+                                </CTableRow>
+                            </CTableBody>
+                        </CTable>
 
-                            <h5 className="border-bottom pb-2 mb-3 mt-4">Complete Form Data</h5>
-                            {selectedRequest.form_data ? (
-                                <div className="json-data-container p-3 rounded"
+                        <h5 className="border-bottom pb-2 mb-3 mt-4">Complete Form Data</h5>
+                        {selectedRequest.form_data || selectedRequest.formData ? (
+                            <div
+                                className="json-data-container p-3 rounded"
+                                style={{
+                                    backgroundColor: '#2d3238',
+                                    border: '1px solid #444'
+                                }}
+                            >
+                                <pre
                                     style={{
-                                        backgroundColor: '#2d3238',
-                                        border: '1px solid #444'
-                                    }}>
-                                    <pre
-                                        style={{
-                                            whiteSpace: 'pre-wrap',
-                                            color: '#e8e8e8',
-                                            backgroundColor: 'transparent',
-                                            fontFamily: 'monospace',
-                                            fontSize: '0.85rem',
-                                            overflowX: 'auto',
-                                            margin: 0
-                                        }}
-                                        dangerouslySetInnerHTML={{ __html: formatJSON(selectedRequest.form_data) }}
-                                    ></pre>
-                                </div>
-                            ) : (
-                                <CAlert color="warning">No detailed form data available</CAlert>
-                            )}
-
-                            {selectedRequest.comments && (
-                                <>
-                                    <h5 className="border-bottom pb-2 mb-3 mt-4">Comments</h5>
-                                    <div className="p-3 bg-light rounded">
-                                        <p className="mb-0">{selectedRequest.comments}</p>
-                                    </div>
-                                </>
-                            )}
-
-                            {selectedRequest.other_reason && (
-                                <>
-                                    <h5 className="border-bottom pb-2 mb-3 mt-4">Other Reason</h5>
-                                    <div className="p-3 bg-light rounded">
-                                        <p className="mb-0">{selectedRequest.other_reason}</p>
-                                    </div>
-                                </>
-                            )}
-                        </>
-                    )}
-                </CModalBody>
+                                        whiteSpace: 'pre-wrap',
+                                        color: '#e8e8e8',
+                                        backgroundColor: 'transparent',
+                                        fontFamily: 'monospace',
+                                        fontSize: '0.85rem',
+                                        overflowX: 'auto',
+                                        margin: 0
+                                    }}
+                                >
+                                    {JSON.stringify(selectedRequest.form_data || selectedRequest.formData, null, 2)}
+                                </pre>
+                            </div>
+                        ) : (
+                            <CAlert color="warning">No detailed form data available</CAlert>
+                        )}
+                    </CModalBody>
+                )}
                 <CModalFooter>
                     <CButton
                         color="danger"
                         onClick={() => {
-                            closeModal()
-                            deleteRequest(selectedRequest.id, selectedRequest.program)
+                            deleteRequest(selectedRequest)
                         }}
                         disabled={isDeleting}
                     >

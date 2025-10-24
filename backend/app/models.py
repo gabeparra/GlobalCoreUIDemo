@@ -203,6 +203,7 @@ class ExitForm(Base):
     # Store all form data as JSON
     form_data = Column(JSON, nullable=True)
 
+# Pathway Programs Intent to Progress Routes
 class PathwayProgramsIntentToProgress(Base):
     __tablename__ = "pathway_programs_intent_to_progress"
 
@@ -210,10 +211,56 @@ class PathwayProgramsIntentToProgress(Base):
     
     # Required basic fields
     student_name = Column(String, index=True)
-    student_id = Column(String, index=True)
-    program = Column(String, default="Pathway Programs Intent to Progress")
+    student_id = Column(String, index=True)  # Removed unique constraint to allow multiple submissions
+    program = Column(String)
     submission_date = Column(DateTime)
-    status = Column(String, default="pending")
+    status = Column(String)
+    
+    # Store all form data as JSON
+    form_data = Column(JSON, nullable=True)
+
+# Pathway Programs Next Steps
+class PathwayProgramsNextSteps(Base):
+    __tablename__ = "pathway_programs_next_steps"
+
+    id = Column(Integer, primary_key=True, index=True)
+    
+    # Required basic fields
+    student_name = Column(String, index=True)
+    student_id = Column(String, index=True)  # Removed unique constraint to allow multiple submissions
+    program = Column(String)
+    submission_date = Column(DateTime)
+    status = Column(String)
+    
+    # Store all form data as JSON
+    form_data = Column(JSON, nullable=True)
+
+class ReducedCourseLoadRequest(Base):
+    __tablename__ = "reduced_course_load_requests"
+
+    id = Column(Integer, primary_key=True, index=True)
+    
+    # Required basic fields
+    student_name = Column(String, index=True)
+    student_id = Column(String, index=True)  # Removed unique constraint to allow multiple submissions
+    program = Column(String)
+    submission_date = Column(DateTime)
+    status = Column(String)
+    
+    # Store all form data as JSON
+    form_data = Column(JSON, nullable=True)
+
+class GlobalTransferOutRequest(Base):
+    __tablename__ = "global_transfer_out_requests"
+
+    id = Column(Integer, primary_key=True, index=True)
+    
+    # Required basic fields
+    student_name = Column(String, index=True)
+    student_id = Column(String, index=True)
+    program = Column(String)
+    submission_date = Column(DateTime)
+    status = Column(String)
     
     # Store all form data as JSON
     form_data = Column(JSON, nullable=True)

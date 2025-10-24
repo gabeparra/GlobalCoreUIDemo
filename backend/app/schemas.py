@@ -700,23 +700,28 @@ class ExitForm(BaseModel):
         populate_by_name = True
 
 class PathwayProgramsIntentToProgressBase(BaseModel):
+    # Required basic fields
+    student_name: str
+    student_id: str
+    program: str = "Pathway Programs Intent to Progress"
+
     # Student Information
     ucf_id: Optional[str] = None
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     date_of_birth: Optional[str] = None
     ethnicity: Optional[str] = None
-    
+
     # Permanent Address
     street_address: Optional[str] = None
     state: Optional[str] = None
     city: Optional[str] = None
     postal_code: Optional[str] = None
     country: Optional[str] = None
-    
+
     # UCF Global Program
     ucf_global_program: Optional[str] = None
-    
+
     # Emergency Contact
     emergency_contact_name: Optional[str] = None
     emergency_contact_relationship: Optional[str] = None
@@ -726,40 +731,192 @@ class PathwayProgramsIntentToProgressBase(BaseModel):
     emergency_contact_postal_code: Optional[str] = None
     emergency_contact_country: Optional[str] = None
     emergency_contact_phone: Optional[str] = None
-    
+
     # Application Information
     expected_progression_term: Optional[str] = None
     academic_credits_earned: Optional[str] = None
     intended_major: Optional[str] = None
     has_accelerated_credits: Optional[bool] = None
-    
+
     # Post-Secondary Information
     attended_other_institutions: Optional[bool] = None
-    
+
     # College Entrance Exams
     sat_total_score: Optional[str] = None
     sat_date_taken: Optional[str] = None
     act_total_score: Optional[str] = None
     act_date_taken: Optional[str] = None
-    
+
     # Crime/Disciplinary Questions
     disciplinary_action: Optional[bool] = None
     felony_conviction: Optional[bool] = None
     criminal_proceedings: Optional[bool] = None
-    
+
     # Disclaimer
     certification: Optional[bool] = None
+
+    # Raw form data for debugging/completeness
+    raw_form_data: Optional[Dict[str, Any]] = None
 
 class PathwayProgramsIntentToProgressCreate(PathwayProgramsIntentToProgressBase):
     pass
 
-class PathwayProgramsIntentToProgress(BaseModel):
+class PathwayProgramsIntentToProgress(PathwayProgramsIntentToProgressBase):
     id: int
+    submission_date: Optional[datetime] = None
+    status: Optional[str] = None
+    form_data: Optional[Dict[str, Any]] = None
+
+    class Config:
+        from_attributes = True
+        populate_by_name = True
+
+class PathwayProgramsNextStepsBase(BaseModel):
+    # Required basic fields
     student_name: str
     student_id: str
-    program: str
-    submission_date: datetime
-    status: str
+    program: str = "Pathway Programs Next Steps"
+
+    # Personal Information
+    ucf_id: Optional[str] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    legal_sex: Optional[str] = None
+    email: Optional[str] = None
+    phone_number: Optional[str] = None
+
+    # Academic Information
+    academic_program: Optional[str] = None
+    academic_track: Optional[str] = None
+    intended_major: Optional[str] = None
+
+    # Dietary Requirements
+    dietary_requirements: Optional[str] = None
+
+    # Housing
+    housing_selection: Optional[str] = None
+
+    # Acknowledgements
+    program_acknowledgement: Optional[bool] = False
+    housing_acknowledgement: Optional[bool] = False
+    health_insurance_acknowledgement: Optional[bool] = False
+
+    class Config:
+        from_attributes = True
+        populate_by_name = True
+
+class PathwayProgramsNextSteps(PathwayProgramsNextStepsBase):
+    id: int
+    submission_date: Optional[datetime] = None
+    status: Optional[str] = None
+    form_data: Optional[Dict[str, Any]] = None
+
+    class Config:
+        from_attributes = True
+        populate_by_name = True
+
+class PathwayProgramsNextStepsCreate(PathwayProgramsNextStepsBase):
+    pass
+
+class ReducedCourseLoadRequestBase(BaseModel):
+    # Required basic fields
+    student_name: str
+    student_id: str
+    program: str = "Reduced Course Load Request"
+
+    # Student Information
+    ucf_id: Optional[str] = None
+    sevis_id: Optional[str] = None
+    visa_type: Optional[str] = None
+    given_name: Optional[str] = None
+    family_name: Optional[str] = None
+    street_address: Optional[str] = None
+    apartment_number: Optional[str] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
+    postal_code: Optional[str] = None
+    ucf_email_address: Optional[str] = None
+    secondary_email_address: Optional[str] = None
+    us_telephone_number: Optional[str] = None
+
+    # Academic Information
+    academic_level: Optional[str] = None
+    academic_program_major: Optional[str] = None
+    rcl_term: Optional[str] = None
+    rcl_year: Optional[str] = None
+    desired_credits: Optional[str] = None
+    in_person_credits: Optional[str] = None
+
+    # RCL Reason
+    rcl_reason: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+        populate_by_name = True
+
+class ReducedCourseLoadRequestCreate(ReducedCourseLoadRequestBase):
+    pass
+
+class ReducedCourseLoadRequest(ReducedCourseLoadRequestBase):
+    id: int
+    submission_date: Optional[datetime] = None
+    status: Optional[str] = None
+    form_data: Optional[Dict[str, Any]] = None
+
+    class Config:
+        from_attributes = True
+        populate_by_name = True
+
+class GlobalTransferOutRequestBase(BaseModel):
+    # Required basic fields
+    student_name: str
+    student_id: str
+    program: str = "Global Transfer Out Request"
+
+    # Student Information
+    ucf_id: Optional[str] = None
+    sevis_id: Optional[str] = None
+    visa_type: Optional[str] = None
+    given_name: Optional[str] = None
+    family_name: Optional[str] = None
+    street_address: Optional[str] = None
+    apartment_number: Optional[str] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
+    postal_code: Optional[str] = None
+    ucf_email_address: Optional[str] = None
+    secondary_email_address: Optional[str] = None
+    us_telephone_number: Optional[str] = None
+
+    # Current Academic Information
+    ucf_education_level: Optional[str] = None
+    campus_employment: Optional[str] = None
+
+    # New School Information
+    new_school_name: Optional[str] = None
+    new_school_start_date: Optional[str] = None
+    desired_sevis_release_date: Optional[str] = None
+    new_school_international_advisor_name: Optional[str] = None
+    new_school_international_advisor_email: Optional[str] = None
+    new_school_international_advisor_phone: Optional[str] = None
+
+    # Additional Information Checkboxes
+    understanding_sevis_release: Optional[bool] = False
+    permission_to_communicate: Optional[bool] = False
+    understanding_work_authorization: Optional[bool] = False
+    understanding_financial_obligations: Optional[bool] = False
+
+    class Config:
+        from_attributes = True
+        populate_by_name = True
+
+class GlobalTransferOutRequestCreate(GlobalTransferOutRequestBase):
+    pass
+
+class GlobalTransferOutRequest(GlobalTransferOutRequestBase):
+    id: int
+    submission_date: Optional[datetime] = None
+    status: Optional[str] = None
     form_data: Optional[Dict[str, Any]] = None
 
     class Config:

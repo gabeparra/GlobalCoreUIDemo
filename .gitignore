@@ -12,6 +12,7 @@ dist/
 backend/__pycache__/
 backend/**/__pycache__/
 backend/venv/
+backend/newRoutesdoesn'twork.py
 **/*.pyc
 **/*.pyo
 **/*.pyd
@@ -42,18 +43,10 @@ yarn-error.log*
 # Uploads directory - ignore all uploaded files but keep structure
 backend/uploads/*
 !backend/uploads/.gitignore
-!backend/uploads/academic_training/
-!backend/uploads/academic_training/offer_letters/
 !backend/uploads/academic_training/offer_letters/.gitkeep
-!backend/uploads/academic_training/training_authorizations/
 !backend/uploads/academic_training/training_authorizations/.gitkeep
-!backend/uploads/florida_statute_101035/
 !backend/uploads/florida_statute_101035/.gitkeep
-!backend/uploads/opt_requests/
 !backend/uploads/opt_requests/.gitkeep
-!backend/uploads/leave_requests/
 !backend/uploads/leave_requests/.gitkeep
-!backend/uploads/opt_stem_applications/
 !backend/uploads/opt_stem_applications/.gitkeep
-!backend/uploads/exit_forms/
 !backend/uploads/exit_forms/.gitkeep

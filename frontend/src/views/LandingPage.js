@@ -95,16 +95,40 @@ export default function LandingPage() {
             path: '/forms/exit'
         },
         {
+            title: 'Pathway Programs Intent to Progress',
+            description: 'Submit your Intent to Progress for Pathway Programs at UCF Global.',
+            icon: '📝',
+            path: '/forms/pathway-programs-intent-to-progress'
+        },
+        {
+            title: 'Pathway Programs Next Steps',
+            description: 'Complete your next steps for UCF Global Pathway Programs.',
+            icon: '📝',
+            path: '/forms/pathway-programs-next-steps'
+        },
+        {
+            title: 'Reduced Course Load Request',
+            description: 'Request approval for a reduced course load while maintaining international student status.',
+            icon: '📚',
+            path: '/forms/reduced-course-load'
+        },
+        {
             title: 'View All Form Submissions',
             description: 'View all submitted forms including I-20 requests and Academic Training requests.',
             icon: '📋',
             path: '/forms/all-requests'
         },
         {
-            title: 'Pathway Programs Intent to Progress',
-            description: 'Submit your Intent to Progress for Pathway Programs at UCF Global.',
+            title: 'SPEAK Test Registration',
+            description: 'Register for the Speaking Proficiency English Assessment Kit (SPEAK) Test for international students.',
             icon: '📝',
-            path: '/forms/pathway-programs-intent-to-progress'
+            path: '/forms/speak-test-registration'
+        },
+        {
+            title: 'Global Transfer Out',
+            description: 'Transfer your SEVIS record from UCF to a new school in the United States.',
+            icon: '🌐',
+            path: '/forms/global-transfer-out'
         }
     ]
 
