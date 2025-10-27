@@ -2,6 +2,21 @@ from datetime import datetime
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, Field
 
+# Base class for all forms - handles the repeated fields
+class BaseFormSchema(BaseModel):
+    """Base schema for all UCF Global forms"""
+    # These 3 fields appear in EVERY form
+    student_name: str = Field(..., min_length=1, max_length=200, description="Full student name")
+    student_id: str = Field(..., min_length=1, max_length=20, description="Student ID number") 
+    program: str = Field(..., min_length=1, max_length=100, description="Program name")
+    
+    # Common optional metadata
+    raw_form_data: Optional[Dict[str, Any]] = Field(None, description="Raw form data for debugging")
+    
+    class Config:
+        from_attributes = True
+        populate_by_name = True
+
 class Address(BaseModel):
     street: Optional[str] = None
     city: Optional[str] = None
