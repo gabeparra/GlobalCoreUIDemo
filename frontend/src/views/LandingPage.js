@@ -113,12 +113,6 @@ export default function LandingPage() {
             path: '/forms/reduced-course-load'
         },
         {
-            title: 'View All Form Submissions',
-            description: 'View all submitted forms including I-20 requests and Academic Training requests.',
-            icon: '📋',
-            path: '/forms/all-requests'
-        },
-        {
             title: 'SPEAK Test Registration',
             description: 'Register for the Speaking Proficiency English Assessment Kit (SPEAK) Test for international students.',
             icon: '📝',
@@ -135,6 +129,24 @@ export default function LandingPage() {
             description: 'Submit a petition for international travel approval as required by UCF Policy.',
             icon: '✈️',
             path: '/forms/travel-approval-petition'
+        },
+        {
+            title: 'UCF Global Records Release',
+            description: 'Submit a request to release your UCF Global records.',
+            icon: '📝',
+            path: '/forms/ucf-global-records-release'
+        },
+        {
+            title: 'Virtual Check In',
+            description: 'Complete your virtual check-in process by providing personal information, U.S. address, emergency contact, and required documents.',
+            icon: '✅',
+            path: '/forms/virtual-checkin'
+        },
+        {
+            title: 'View All Form Submissions',
+            description: 'View all submitted forms including I-20 requests and Academic Training requests.',
+            icon: '📋',
+            path: '/forms/all-requests'
         }
     ]
 

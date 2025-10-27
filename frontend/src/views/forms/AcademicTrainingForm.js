@@ -346,7 +346,7 @@ export default function AcademicTrainingForm() {
 
     return (
         <CRow>
-            <CCol xs={12}>
+            <CCol xs={12} sm={12} md={11} lg={10} xl={12}>
                 <CCard className="mb-4">
                     <CCardHeader className="bg-primary text-white d-flex align-items-center">
                         <div className="me-3">

@@ -232,7 +232,7 @@ export default function OPTRequestForm() {
 
             setSuccess(true)
             setTimeout(() => {
-                navigate('/')
+                window.location.href = '/#/forms/all-requests'
             }, 2000)
 
         } catch (err) {
@@ -250,7 +250,7 @@ export default function OPTRequestForm() {
     return (
         <CContainer fluid>
             <CRow className="justify-content-center">
-                <CCol xs={12} lg={10}>
+                <CCol xs={12} sm={12} md={11} lg={10} xl={12}>
                     <CCard>
                         <CCardHeader className="bg-primary text-white">
                             <div className="d-flex justify-content-between align-items-center">

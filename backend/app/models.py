@@ -264,3 +264,36 @@ class GlobalTransferOutRequest(Base):
     
     # Store all form data as JSON
     form_data = Column(JSON, nullable=True)
+
+class UCFGlobalRecordsReleaseForm(Base):
+    __tablename__ = "ucf_global_records_release_forms"
+
+    id = Column(Integer, primary_key=True, index=True)
+    
+    # Required basic fields
+    student_name = Column(String, index=True)
+    student_id = Column(String, index=True)
+    program = Column(String, default="UCF Global Records Release")
+    submission_date = Column(DateTime)
+    status = Column(String, default="pending")
+    
+    # Store all form data as JSON
+    form_data = Column(JSON, nullable=True)
+
+class VirtualCheckInRequest(Base):
+    __tablename__ = "virtual_checkin_requests"
+
+    id = Column(Integer, primary_key=True, index=True)
+    
+    # Required basic fields
+    student_name = Column(String, index=True)
+    student_id = Column(String, index=True)
+    program = Column(String, default="Virtual Check In")
+    submission_date = Column(DateTime)
+    status = Column(String, default="pending")
+    
+    # Store all form data as JSON
+    form_data = Column(JSON, nullable=True)
+    
+    # Store remarks separately for better handling
+    remarks = Column(Text, nullable=True)

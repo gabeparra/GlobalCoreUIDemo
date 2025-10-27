@@ -1,19 +1,10 @@
-import { useState } from "react"
-import "@coreui/coreui/dist/css/coreui.min.css"
+import React, { useState } from 'react'
 import {
-    CForm,
-    CFormLabel,
-    CFormInput,
-    CFormSelect,
-    CFormCheck,
-    CButton,
-    CContainer,
-    CRow,
-    CCol,
-    CFormTextarea,
-    CAlert,
-    CSpinner,
-} from "@coreui/react"
+    CCard, CCardBody, CCardHeader,
+    CRow, CCol, CForm, CFormInput, CFormSelect, CFormCheck,
+    CButton, CAlert, CSpinner, CContainer, CFormLabel,
+    CFormTextarea
+} from '@coreui/react'
 import { useNavigate } from 'react-router-dom'
 
 export default function DocumentRequestForm() {
@@ -22,7 +13,8 @@ export default function DocumentRequestForm() {
     const [error, setError] = useState(null)
     const [success, setSuccess] = useState(false)
 
-    const [formData, setFormData] = useState({
+    // Personal Information State
+    const [personalInfo, setPersonalInfo] = useState({
         requestId: "DR2502312",
         ucfId: import.meta.env.VITE_PLACEHOLDER_UCF_ID || "1234567",
         firstName: import.meta.env.VITE_PLACEHOLDER_GIVEN_NAME || "John",
@@ -30,12 +22,62 @@ export default function DocumentRequestForm() {
         email: import.meta.env.VITE_PLACEHOLDER_STUDENT_EMAIL || "john.smith@ucf.edu",
         phoneNumber: import.meta.env.VITE_PLACEHOLDER_US_TELEPHONE || "407-123-4567",
         dateOfBirth: import.meta.env.VITE_PLACEHOLDER_DATE_OF_BIRTH || "1995-01-15",
-        gender: "male",
+        gender: "male"
+    })
+
+    // Document Selection State
+    const [documentSelection, setDocumentSelection] = useState({
         globalStudentDocument: "",
         undergradDocument: "",
-        format: "email",
-        additionalInfo: "",
+        format: "email"
     })
+
+    // Additional Information State
+    const [additionalInfo, setAdditionalInfo] = useState({
+        additionalComments: ""
+    })
+
+    const handlePersonalInfoChange = (field, value) => {
+        setPersonalInfo(prev => ({
+            ...prev,
+            [field]: value
+        }))
+    }
+
+    const handleDocumentSelectionChange = (field, value) => {
+        setDocumentSelection(prev => ({
+            ...prev,
+            [field]: value
+        }))
+    }
+
+    const handleAdditionalInfoChange = (field, value) => {
+        setAdditionalInfo(prev => ({
+            ...prev,
+            [field]: value
+        }))
+    }
+
+    const validateForm = () => {
+        const errors = []
+
+        // Validate required fields
+        if (!personalInfo.ucfId) errors.push('UCF ID is required')
+        if (!personalInfo.firstName) errors.push('First Name is required')
+        if (!personalInfo.lastName) errors.push('Last Name is required')
+        if (!personalInfo.email) errors.push('Email is required')
+
+        // Validate document selection
+        if (!documentSelection.globalStudentDocument && !documentSelection.undergradDocument) {
+            errors.push('Please select at least one document type')
+        }
+
+        if (!documentSelection.format) {
+            errors.push('Please select a delivery format')
+        }
+
+        return errors
+    }
 
     const handleSubmit = async (e) => {
         e.preventDefault()
@@ -43,36 +85,35 @@ export default function DocumentRequestForm() {
         setError(null)
         setSuccess(false)
 
+        // Validate form
+        const validationErrors = validateForm()
+        if (validationErrors.length > 0) {
+            setError(validationErrors.join(', '))
+            setLoading(false)
+            return
+        }
+
         try {
-            // Validate required fields
-            if (!formData.globalStudentDocument && !formData.undergradDocument) {
-                throw new Error('Please select at least one document type.')
-            }
-
-            if (!formData.format) {
-                throw new Error('Please select a delivery format.')
-            }
-
             // Create student name from first and last name
-            const studentName = `${formData.firstName} ${formData.lastName}`.trim()
+            const studentName = `${personalInfo.firstName} ${personalInfo.lastName}`.trim()
 
             // Convert form data to snake_case for backend
             const requestData = {
                 student_name: studentName,
-                student_id: formData.ucfId,
+                student_id: personalInfo.ucfId,
                 program: "Document Request",
-                request_id: formData.requestId,
-                ucf_id: formData.ucfId,
-                first_name: formData.firstName,
-                last_name: formData.lastName,
-                email: formData.email,
-                phone_number: formData.phoneNumber,
-                date_of_birth: formData.dateOfBirth,
-                gender: formData.gender,
-                global_student_document: formData.globalStudentDocument,
-                undergrad_document: formData.undergradDocument,
-                format: formData.format,
-                additional_info: formData.additionalInfo
+                request_id: personalInfo.requestId,
+                ucf_id: personalInfo.ucfId,
+                first_name: personalInfo.firstName,
+                last_name: personalInfo.lastName,
+                email: personalInfo.email,
+                phone_number: personalInfo.phoneNumber,
+                date_of_birth: personalInfo.dateOfBirth,
+                gender: personalInfo.gender,
+                global_student_document: documentSelection.globalStudentDocument,
+                undergrad_document: documentSelection.undergradDocument,
+                format: documentSelection.format,
+                additional_info: additionalInfo.additionalComments
             }
 
             console.log('Submitting Document Request:', requestData)
@@ -95,7 +136,7 @@ export default function DocumentRequestForm() {
 
             setSuccess(true)
             setTimeout(() => {
-                navigate('/')
+                navigate('/forms/all-requests')
             }, 2000)
 
         } catch (err) {
@@ -111,327 +152,293 @@ export default function DocumentRequestForm() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50">
-            <CContainer fluid className="p-0">
-                {/* Header */}
-                <div className="bg-white border-b-4 border-warning py-4 px-4">
-                    <h1 className="text-2xl font-bold text-center m-0">Document Request</h1>
-                </div>
-
-                {/* Form Content */}
-                <CContainer className="py-4">
-                    {error && <CAlert color="danger" className="mb-3">{error}</CAlert>}
-                    {success && <CAlert color="success" className="mb-3">Document Request submitted successfully! Redirecting...</CAlert>}
-
-                    <CForm onSubmit={handleSubmit}>
-                        {/* Personal Data Section */}
-                        <div className="mb-4">
-                            <h6 className="mb-3 font-semibold">
-                                <span className="me-2">👤</span>Personal Data
-                            </h6>
-
-                            <CRow className="mb-3">
-                                <CCol md={6}>
-                                    <div className="d-flex align-items-center">
-                                        <CFormLabel className="mb-0 me-3" style={{ minWidth: "140px" }}>
-                                            Request ID
-                                        </CFormLabel>
-                                        <CFormInput type="text" value={formData.requestId} disabled plainText />
-                                    </div>
-                                </CCol>
-                            </CRow>
-
-                            <CRow className="mb-3">
-                                <CCol md={6}>
-                                    <div className="d-flex align-items-center">
-                                        <CFormLabel className="mb-0 me-3" style={{ minWidth: "140px" }}>
-                                            UCF ID
-                                        </CFormLabel>
-                                        <CFormInput
-                                            type="text"
-                                            value={formData.ucfId}
-                                            onChange={(e) => setFormData({ ...formData, ucfId: e.target.value })}
-                                            placeholder="e.g., 1234567"
-                                        />
-                                    </div>
-                                </CCol>
-                            </CRow>
-
-                            <CRow className="mb-3">
-                                <CCol md={6}>
-                                    <div className="d-flex align-items-center">
-                                        <CFormLabel className="mb-0 me-3" style={{ minWidth: "140px" }}>
-                                            First Name
-                                        </CFormLabel>
-                                        <CFormInput
-                                            type="text"
-                                            value={formData.firstName}
-                                            onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                                            placeholder="e.g., John"
-                                        />
-                                    </div>
-                                </CCol>
-                            </CRow>
-
-                            <CRow className="mb-3">
-                                <CCol md={6}>
-                                    <div className="d-flex align-items-center">
-                                        <CFormLabel className="mb-0 me-3" style={{ minWidth: "140px" }}>
-                                            Last Name
-                                        </CFormLabel>
-                                        <CFormInput
-                                            type="text"
-                                            value={formData.lastName}
-                                            onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                                            placeholder="e.g., Smith"
-                                        />
-                                    </div>
-                                </CCol>
-                            </CRow>
-
-                            <CRow className="mb-3">
-                                <CCol md={6}>
-                                    <div className="d-flex align-items-center">
-                                        <CFormLabel className="mb-0 me-3" style={{ minWidth: "140px" }}>
-                                            Email
-                                        </CFormLabel>
-                                        <CFormInput
-                                            type="email"
-                                            value={formData.email}
-                                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                            placeholder="e.g., john.smith@ucf.edu"
-                                        />
-                                    </div>
-                                </CCol>
-                            </CRow>
-
-                            <CRow className="mb-3">
-                                <CCol md={6}>
-                                    <div className="d-flex align-items-center">
-                                        <CFormLabel className="mb-0 me-3" style={{ minWidth: "140px" }}>
-                                            Phone Number
-                                        </CFormLabel>
-                                        <CFormInput
-                                            type="tel"
-                                            value={formData.phoneNumber}
-                                            onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
-                                            placeholder="e.g., 407-123-4567"
-                                        />
-                                    </div>
-                                </CCol>
-                            </CRow>
-
-                            <CRow className="mb-3">
-                                <CCol md={6}>
-                                    <div className="d-flex align-items-center">
-                                        <CFormLabel className="mb-0 me-3" style={{ minWidth: "140px" }}>
-                                            Date of Birth
-                                        </CFormLabel>
-                                        <CFormInput
-                                            type="date"
-                                            value={formData.dateOfBirth}
-                                            onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
-                                            placeholder="5/16/1994"
-                                        />
-                                    </div>
-                                </CCol>
-                            </CRow>
-
-                            <CRow className="mb-3">
-                                <CCol md={6}>
-                                    <div className="d-flex align-items-center">
-                                        <CFormLabel className="mb-0 me-3" style={{ minWidth: "140px" }}>
-                                            Gender
-                                        </CFormLabel>
-                                        <CFormSelect
-                                            value={formData.gender}
-                                            onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
-                                        >
-                                            <option value="">Male</option>
-                                            <option value="male">Male</option>
-                                            <option value="female">Female</option>
-                                            <option value="other">Other</option>
-                                            <option value="prefer-not-to-say">Prefer not to say</option>
-                                        </CFormSelect>
-                                    </div>
-                                </CCol>
-                            </CRow>
-                        </div>
-
-                        {/* Document Section */}
-                        <div className="mb-4">
-                            <h6 className="mb-3 font-semibold">
-                                <span className="me-2">📄</span>Document
-                            </h6>
-
-                            <p className="fst-italic text-muted mb-3">
-                                If requesting multiple documents, please submit multiple forms. Documents will be ready within 2
-                                business days. During peak times, processing may take longer.
-                            </p>
-
-                            <div className="mb-4">
-                                <h6 className="mb-3 fw-bold">UCF Global Students</h6>
-
-                                <div className="mb-2">
-                                    <CFormCheck
-                                        type="radio"
-                                        name="globalStudentDocument"
-                                        id="enrollmentVerification1"
-                                        label="Enrollment Verification Letter"
-                                        value="enrollmentVerification"
-                                        checked={formData.globalStudentDocument === "enrollmentVerification"}
-                                        onChange={(e) => setFormData({ ...formData, globalStudentDocument: e.target.value })}
-                                    />
+        <CContainer fluid>
+            <CRow className="justify-content-center">
+                <CCol xs={12} sm={12} md={11} lg={10} xl={12}>
+                    <CCard>
+                        <CCardHeader className="bg-primary text-white">
+                            <div className="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h4 className="mb-0">DOCUMENT REQUEST FORM</h4>
+                                    <small>UCF Global - Document Request</small>
                                 </div>
-
-                                <div className="mb-2">
-                                    <CFormCheck
-                                        type="radio"
-                                        name="globalStudentDocument"
-                                        id="paymentReceipt"
-                                        label="Payment Receipt"
-                                        value="paymentReceipt"
-                                        checked={formData.globalStudentDocument === "paymentReceipt"}
-                                        onChange={(e) => setFormData({ ...formData, globalStudentDocument: e.target.value })}
-                                    />
-                                </div>
-
-                                <div className="mb-2">
-                                    <CFormCheck
-                                        type="radio"
-                                        name="globalStudentDocument"
-                                        id="certificationParticipation"
-                                        label="Certification of Participation"
-                                        value="certificationParticipation"
-                                        checked={formData.globalStudentDocument === "certificationParticipation"}
-                                        onChange={(e) => setFormData({ ...formData, globalStudentDocument: e.target.value })}
-                                    />
-                                </div>
-
-                                <div className="mb-2">
-                                    <CFormCheck
-                                        type="radio"
-                                        name="globalStudentDocument"
-                                        id="certificationCompletion"
-                                        label="Certification of Completion"
-                                        value="certificationCompletion"
-                                        checked={formData.globalStudentDocument === "certificationCompletion"}
-                                        onChange={(e) => setFormData({ ...formData, globalStudentDocument: e.target.value })}
-                                    />
-                                </div>
-
-                                <div className="mb-2">
-                                    <CFormCheck
-                                        type="radio"
-                                        name="globalStudentDocument"
-                                        id="transcript"
-                                        label="Transcript"
-                                        value="transcript"
-                                        checked={formData.globalStudentDocument === "transcript"}
-                                        onChange={(e) => setFormData({ ...formData, globalStudentDocument: e.target.value })}
-                                    />
-                                </div>
-
-                                <div className="mb-2">
-                                    <CFormCheck
-                                        type="radio"
-                                        name="globalStudentDocument"
-                                        id="proficiencyWaiver"
-                                        label={
-                                            <span>
-                                                Proficiency Waiver{" "}
-                                                <span className="fst-italic text-muted">
-                                                    (UCF Global students applying to a UCF Undergraduate or Graduate Degree Program can meet proof
-                                                    of English proficiency when completing all core courses in IEP level 8 or higher with a grade
-                                                    of a "B" or better.)
-                                                </span>
-                                            </span>
-                                        }
-                                        value="proficiencyWaiver"
-                                        checked={formData.globalStudentDocument === "proficiencyWaiver"}
-                                        onChange={(e) => setFormData({ ...formData, globalStudentDocument: e.target.value })}
-                                    />
+                                <div className="text-end">
+                                    <small>Complete all sections below</small>
                                 </div>
                             </div>
+                        </CCardHeader>
+                        <CCardBody>
+                            {error && <CAlert color="danger">{error}</CAlert>}
+                            {success && <CAlert color="success">Document Request submitted successfully! Redirecting...</CAlert>}
 
-                            <div className="mb-4">
-                                <h6 className="mb-3 fw-bold">Undergraduate and Graduate Students</h6>
+                            <CForm onSubmit={handleSubmit}>
+                                {/* Personal Information Section */}
+                                <CCard className="mb-4">
+                                    <CCardHeader className="bg-primary text-white">
+                                        <div className="d-flex align-items-center">
+                                            <i className="cil-user me-2"></i>
+                                            Personal Information
+                                        </div>
+                                    </CCardHeader>
+                                    <CCardBody>
+                                        <CRow className="mb-3">
+                                            <CCol md={6}>
+                                                <CFormLabel htmlFor="requestId">Request ID</CFormLabel>
+                                                <CFormInput
+                                                    type="text"
+                                                    id="requestId"
+                                                    value={personalInfo.requestId}
+                                                    disabled
+                                                    plainText
+                                                />
+                                            </CCol>
+                                        </CRow>
 
-                                <div className="mb-2">
-                                    <CFormCheck
-                                        type="radio"
-                                        name="undergradDocument"
-                                        id="enrollmentVerification2"
-                                        label="Enrollment Verification Letter"
-                                        value="enrollmentVerification"
-                                        checked={formData.undergradDocument === "enrollmentVerification"}
-                                        onChange={(e) => setFormData({ ...formData, undergradDocument: e.target.value })}
-                                    />
-                                </div>
-                            </div>
-                        </div>
+                                        <CRow className="mb-3">
+                                            <CCol md={6}>
+                                                <CFormLabel htmlFor="ucfId">UCF ID <span className="text-danger">*</span></CFormLabel>
+                                                <CFormInput
+                                                    type="text"
+                                                    id="ucfId"
+                                                    value={personalInfo.ucfId}
+                                                    onChange={(e) => handlePersonalInfoChange('ucfId', e.target.value)}
+                                                    placeholder="e.g., 1234567"
+                                                    required
+                                                />
+                                            </CCol>
+                                            <CCol md={6}>
+                                                <CFormLabel htmlFor="firstName">First Name <span className="text-danger">*</span></CFormLabel>
+                                                <CFormInput
+                                                    type="text"
+                                                    id="firstName"
+                                                    value={personalInfo.firstName}
+                                                    onChange={(e) => handlePersonalInfoChange('firstName', e.target.value)}
+                                                    placeholder="e.g., John"
+                                                    required
+                                                />
+                                            </CCol>
+                                        </CRow>
 
-                        {/* Delivery Section */}
-                        <div className="mb-4">
-                            <h6 className="mb-3 font-semibold">
-                                <span className="me-2">🚚</span>Delivery
-                            </h6>
+                                        <CRow className="mb-3">
+                                            <CCol md={6}>
+                                                <CFormLabel htmlFor="lastName">Last Name <span className="text-danger">*</span></CFormLabel>
+                                                <CFormInput
+                                                    type="text"
+                                                    id="lastName"
+                                                    value={personalInfo.lastName}
+                                                    onChange={(e) => handlePersonalInfoChange('lastName', e.target.value)}
+                                                    placeholder="e.g., Smith"
+                                                    required
+                                                />
+                                            </CCol>
+                                            <CCol md={6}>
+                                                <CFormLabel htmlFor="email">Email <span className="text-danger">*</span></CFormLabel>
+                                                <CFormInput
+                                                    type="email"
+                                                    id="email"
+                                                    value={personalInfo.email}
+                                                    onChange={(e) => handlePersonalInfoChange('email', e.target.value)}
+                                                    placeholder="e.g., john.smith@ucf.edu"
+                                                    required
+                                                />
+                                            </CCol>
+                                        </CRow>
 
-                            <CRow className="mb-3">
-                                <CCol md={6}>
-                                    <div className="d-flex align-items-center">
-                                        <CFormLabel className="mb-0 me-3" style={{ minWidth: "140px" }}>
-                                            Format
-                                        </CFormLabel>
-                                        <CFormSelect
-                                            value={formData.format}
-                                            onChange={(e) => setFormData({ ...formData, format: e.target.value })}
+                                        <CRow className="mb-3">
+                                            <CCol md={6}>
+                                                <CFormLabel htmlFor="phoneNumber">Phone Number</CFormLabel>
+                                                <CFormInput
+                                                    type="tel"
+                                                    id="phoneNumber"
+                                                    value={personalInfo.phoneNumber}
+                                                    onChange={(e) => handlePersonalInfoChange('phoneNumber', e.target.value)}
+                                                    placeholder="e.g., 407-123-4567"
+                                                />
+                                            </CCol>
+                                            <CCol md={6}>
+                                                <CFormLabel htmlFor="dateOfBirth">Date of Birth</CFormLabel>
+                                                <CFormInput
+                                                    type="date"
+                                                    id="dateOfBirth"
+                                                    value={personalInfo.dateOfBirth}
+                                                    onChange={(e) => handlePersonalInfoChange('dateOfBirth', e.target.value)}
+                                                />
+                                            </CCol>
+                                        </CRow>
+
+                                        <CRow className="mb-3">
+                                            <CCol md={6}>
+                                                <CFormLabel htmlFor="gender">Gender</CFormLabel>
+                                                <CFormSelect
+                                                    id="gender"
+                                                    value={personalInfo.gender}
+                                                    onChange={(e) => handlePersonalInfoChange('gender', e.target.value)}
+                                                >
+                                                    <option value="male">Male</option>
+                                                    <option value="female">Female</option>
+                                                    <option value="other">Other</option>
+                                                    <option value="prefer-not-to-say">Prefer not to say</option>
+                                                </CFormSelect>
+                                            </CCol>
+                                        </CRow>
+                                    </CCardBody>
+                                </CCard>
+
+                                {/* Document Selection Section */}
+                                <CCard className="mb-4">
+                                    <CCardHeader className="bg-primary text-white">
+                                        <div className="d-flex align-items-center">
+                                            <i className="cil-file me-2"></i>
+                                            Document Selection
+                                        </div>
+                                    </CCardHeader>
+                                    <CCardBody>
+                                        <p className="fst-italic text-muted mb-3">
+                                            If requesting multiple documents, please submit multiple forms. Documents will be ready within 2
+                                            business days. During peak times, processing may take longer.
+                                        </p>
+
+                                        <div className="mb-4">
+                                            <h6 className="mb-3 fw-bold">UCF Global Students</h6>
+                                            {[
+                                                { value: "enrollmentVerification", label: "Enrollment Verification Letter" },
+                                                { value: "paymentReceipt", label: "Payment Receipt" },
+                                                { value: "certificationParticipation", label: "Certification of Participation" },
+                                                { value: "certificationCompletion", label: "Certification of Completion" },
+                                                { value: "transcript", label: "Transcript" },
+                                                {
+                                                    value: "proficiencyWaiver",
+                                                    label: "Proficiency Waiver",
+                                                    description: "(UCF Global students applying to a UCF Undergraduate or Graduate Degree Program can meet proof of English proficiency when completing all core courses in IEP level 8 or higher with a grade of a 'B' or better.)"
+                                                }
+                                            ].map((doc) => (
+                                                <div key={doc.value} className="mb-2">
+                                                    <CFormCheck
+                                                        type="radio"
+                                                        name="globalStudentDocument"
+                                                        id={doc.value}
+                                                        label={
+                                                            doc.description ? (
+                                                                <span>
+                                                                    {doc.label}{" "}
+                                                                    <span className="fst-italic text-muted">
+                                                                        {doc.description}
+                                                                    </span>
+                                                                </span>
+                                                            ) : (
+                                                                doc.label
+                                                            )
+                                                        }
+                                                        value={doc.value}
+                                                        checked={documentSelection.globalStudentDocument === doc.value}
+                                                        onChange={(e) => handleDocumentSelectionChange('globalStudentDocument', e.target.value)}
+                                                    />
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        <div className="mb-4">
+                                            <h6 className="mb-3 fw-bold">Undergraduate and Graduate Students</h6>
+                                            <div className="mb-2">
+                                                <CFormCheck
+                                                    type="radio"
+                                                    name="undergradDocument"
+                                                    id="enrollmentVerification2"
+                                                    label="Enrollment Verification Letter"
+                                                    value="enrollmentVerification"
+                                                    checked={documentSelection.undergradDocument === "enrollmentVerification"}
+                                                    onChange={(e) => handleDocumentSelectionChange('undergradDocument', e.target.value)}
+                                                />
+                                            </div>
+                                        </div>
+                                    </CCardBody>
+                                </CCard>
+
+                                {/* Delivery Section */}
+                                <CCard className="mb-4">
+                                    <CCardHeader className="bg-primary text-white">
+                                        <div className="d-flex align-items-center">
+                                            <i className="cil-truck me-2"></i>
+                                            Delivery
+                                        </div>
+                                    </CCardHeader>
+                                    <CCardBody>
+                                        <CRow className="mb-3">
+                                            <CCol md={6}>
+                                                <CFormLabel htmlFor="format">Format <span className="text-danger">*</span></CFormLabel>
+                                                <CFormSelect
+                                                    id="format"
+                                                    value={documentSelection.format}
+                                                    onChange={(e) => handleDocumentSelectionChange('format', e.target.value)}
+                                                    required
+                                                >
+                                                    <option value="">Select one</option>
+                                                    <option value="email">Email</option>
+                                                    <option value="pickup">Pickup</option>
+                                                    <option value="mail">Mail</option>
+                                                </CFormSelect>
+                                            </CCol>
+                                        </CRow>
+                                    </CCardBody>
+                                </CCard>
+
+                                {/* Additional Information Section */}
+                                <CCard className="mb-4">
+                                    <CCardHeader className="bg-primary text-white">
+                                        <div className="d-flex align-items-center">
+                                            <i className="cil-notes me-2"></i>
+                                            Additional Information
+                                        </div>
+                                    </CCardHeader>
+                                    <CCardBody>
+                                        <p className="fst-italic text-muted mb-3">
+                                            Additional information will be reviewed on a case-by-case basis; not all requests may be fulfilled.
+                                        </p>
+
+                                        <CFormTextarea
+                                            rows={4}
+                                            value={additionalInfo.additionalComments}
+                                            onChange={(e) => handleAdditionalInfoChange('additionalComments', e.target.value)}
+                                            placeholder="Additional Information"
+                                        />
+                                    </CCardBody>
+                                </CCard>
+
+                                {/* Submit Buttons */}
+                                <CRow className="mt-4">
+                                    <CCol className="d-flex justify-content-end gap-2">
+                                        <CButton
+                                            type="button"
+                                            color="secondary"
+                                            onClick={handleCancel}
+                                            disabled={loading}
                                         >
-                                            <option value="">Select one</option>
-                                            <option value="email">Email</option>
-                                            <option value="pickup">Pickup</option>
-                                            <option value="mail">Mail</option>
-                                        </CFormSelect>
-                                    </div>
-                                </CCol>
-                            </CRow>
-                        </div>
-
-                        {/* Additional Information Section */}
-                        <div className="mb-4">
-                            <h6 className="mb-3 font-semibold">Additional Information</h6>
-
-                            <p className="fst-italic text-muted mb-3">
-                                Additional information will be reviewed on a case-by-case basis; not all requests may be fulfilled.
-                            </p>
-
-                            <CFormTextarea
-                                rows={4}
-                                value={formData.additionalInfo}
-                                onChange={(e) => setFormData({ ...formData, additionalInfo: e.target.value })}
-                                placeholder="Additional Information"
-                            />
-                        </div>
-
-                        {/* Action Buttons */}
-                        <div className="d-flex gap-2">
-                            <CButton type="submit" color="success" className="text-white" disabled={loading}>
-                                {loading ? (
-                                    <>
-                                        <CSpinner size="sm" className="me-2" />
-                                        Submitting...
-                                    </>
-                                ) : (
-                                    'Submit'
-                                )}
-                            </CButton>
-                            <CButton type="button" color="danger" onClick={handleCancel} className="text-white" disabled={loading}>
-                                Cancel Changes
-                            </CButton>
-                        </div>
-                    </CForm>
-                </CContainer>
-            </CContainer>
-        </div>
+                                            Cancel Changes
+                                        </CButton>
+                                        <CButton
+                                            type="submit"
+                                            color="success"
+                                            disabled={loading}
+                                        >
+                                            {loading ? (
+                                                <>
+                                                    <CSpinner size="sm" className="me-2" />
+                                                    Submitting...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <i className="cil-check me-2"></i>
+                                                    Submit
+                                                </>
+                                            )}
+                                        </CButton>
+                                    </CCol>
+                                </CRow>
+                            </CForm>
+                        </CCardBody>
+                    </CCard>
+                </CCol>
+            </CRow>
+        </CContainer>
     )
 }

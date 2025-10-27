@@ -34,7 +34,9 @@ const useFetchRequests = () => {
                 { name: 'pathway-programs-intent-to-progress', label: 'Pathway Programs Intent to Progress' },
                 { name: 'pathway-programs-next-steps', label: 'Pathway Programs Next Steps' },
                 { name: 'reduced-course-load', label: 'Reduced Course Load Request' },
-                { name: 'global-transfer-out', label: 'Global Transfer Out Request' }
+                { name: 'global-transfer-out', label: 'Global Transfer Out Request' },
+                { name: 'ucf-global-records-release', label: 'UCF Global Records Release' },
+                { name: 'virtual-checkin', label: 'Virtual Check In' }
             ]
 
             const responses = await Promise.all(
@@ -92,7 +94,9 @@ const useRequestFilters = (requests) => {
         'Pathway Programs Intent to Progress': req => req.program === 'Pathway Programs Intent to Progress',
         'Pathway Programs Next Steps': req => req.program === 'Pathway Programs Next Steps',
         'Reduced Course Load Request': req => req.program === 'Reduced Course Load Request',
-        'Global Transfer Out Request': req => req.program === 'Global Transfer Out Request'
+        'Global Transfer Out Request': req => req.program === 'Global Transfer Out Request',
+        'UCF Global Records Release': req => req.program === 'UCF Global Records Release',
+        'Virtual Check In': req => req.program === 'Virtual Check In'
     }
 
     return Object.entries(requestFilters).reduce((acc, [key, filter]) => {
@@ -145,7 +149,12 @@ const formatRequestType = (request) => {
             const newSchool = req.form_data?.new_school_name || 'N/A';
             const startDate = req.form_data?.new_school_start_date || 'N/A';
             return `Transfer Out: ${newSchool} (${startDate})`;
-        }
+        },
+        'UCF Global Records Release': req => {
+            const recordTypes = req.form_data?.records_to_release || [];
+            const recipient = req.form_data?.release_recipient || 'N/A';
+            return `UCF Global Records Release: ${recordTypes.join(', ')} (To: ${recipient})`;
+        },
     }
 
     const formatter = typeFormatters[request.program] || (req => req.program)
@@ -188,6 +197,8 @@ export default function AllRequestsList() {
             'Pathway Programs Next Steps': `http://localhost:8000/api/pathway-programs-next-steps/${request.id}`,
             'Reduced Course Load Request': `http://localhost:8000/api/reduced-course-load/${request.id}`,
             'Global Transfer Out Request': `http://localhost:8000/api/global-transfer-out/${request.id}`,
+            'UCF Global Records Release': `http://localhost:8000/api/ucf-global-records-release/${request.id}`,
+            'Virtual Check In': `http://localhost:8000/api/virtual-checkin/${request.id}`,
             'I-20 Request': `http://localhost:8000/api/i20-requests/${request.id}`
         }
 
@@ -294,7 +305,10 @@ export default function AllRequestsList() {
                 'exit-forms',
                 'pathway-programs-intent-to-progress',
                 'pathway-programs-next-steps',
-                'reduced-course-load'
+                'reduced-course-load',
+                'global-transfer-out',
+                'ucf-global-records-release',
+                'virtual-checkin'
             ]
 
             // Delete from all endpoints

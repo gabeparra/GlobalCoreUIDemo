@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, status
 from sqlalchemy.orm import Session
 from datetime import datetime
 from typing import List, Optional
@@ -2362,4 +2362,286 @@ def delete_all_global_transfer_out_requests(db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=f"Error deleting Global Transfer Out Requests: {str(e)}")
     
     
-# TRAVEL APPROVAL PETITION ROUTES
+
+@router.post("/ucf-global-records-release/", response_model=schemas.UCFGlobalRecordsReleaseForm)
+async def create_ucf_global_records_release_form(
+    request: schemas.UCFGlobalRecordsReleaseFormCreate, 
+    db: Session = Depends(get_db)
+):
+    """
+    Create a new UCF Global Records Release Form submission.
+    
+    This endpoint handles the submission of the UCF Global Records Release Authorization Form.
+    It validates the incoming request, creates a new database record, and returns the created form.
+    
+    Args:
+        request (UCFGlobalRecordsReleaseFormCreate): The form submission data
+        db (Session): Database session dependency
+    
+    Returns:
+        UCFGlobalRecordsReleaseForm: The created form record with assigned ID and submission details
+    """
+    # Prepare the form data for storage - extract only the nested form_data if it exists
+    # If the request has a nested form_data field, use that; otherwise use the entire request
+    if hasattr(request, 'form_data') and request.form_data:
+        form_data = request.form_data if isinstance(request.form_data, dict) else request.form_data.__dict__
+    else:
+        # Fallback: exclude the basic fields and store the rest as form_data
+        form_data = request.dict(exclude={"student_name", "student_id", "program"})
+    
+    # Create the database model instance
+    db_form = models.UCFGlobalRecordsReleaseForm(
+        student_name=request.student_name or f"{request.first_name} {request.last_name}",
+        student_id=request.student_id or request.ucf_id,
+        program=request.program or "UCF Global Records Release",
+        submission_date=datetime.now(),
+        status="pending",
+        form_data=form_data
+    )
+    
+    # Add to database and commit
+    try:
+        db.add(db_form)
+        db.commit()
+        db.refresh(db_form)
+        return db_form
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+            detail=f"Error creating UCF Global Records Release Form: {str(e)}"
+        )
+        
+@router.get("/ucf-global-records-release/", response_model=List[schemas.UCFGlobalRecordsReleaseForm])
+def get_ucf_global_records_release_forms(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    """Retrieve UCF Global Records Release Forms"""
+    try:
+        requests = db.query(models.UCFGlobalRecordsReleaseForm).offset(skip).limit(limit).all()
+        return requests
+    except Exception as e:
+        print(f"Error retrieving UCF Global Records Release Forms: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error retrieving UCF Global Records Release Forms: {str(e)}")
+
+@router.delete("/ucf-global-records-release/{request_id}", status_code=204)
+def delete_ucf_global_records_release_form(request_id: int, db: Session = Depends(get_db)):
+    """Delete a specific UCF Global Records Release Form"""
+    try:
+        request = db.query(models.UCFGlobalRecordsReleaseForm).filter(models.UCFGlobalRecordsReleaseForm.id == request_id).first()
+        
+        if not request:
+            raise HTTPException(status_code=404, detail="UCF Global Records Release Form not found")
+        
+        db.delete(request)
+        db.commit()
+        
+        return {"message": "UCF Global Records Release Form deleted successfully"}
+    except Exception as e:
+        db.rollback()
+        print(f"Error deleting UCF Global Records Release Form: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error deleting UCF Global Records Release Form: {str(e)}")
+
+@router.delete("/ucf-global-records-release/", status_code=204)
+def delete_all_ucf_global_records_release_forms(db: Session = Depends(get_db)):
+    """Delete all UCF Global Records Release Forms"""
+    try:
+        db.query(models.UCFGlobalRecordsReleaseForm).delete()
+        db.commit()
+        return {"message": "All UCF Global Records Release Forms deleted successfully"}
+    except Exception as e:
+        db.rollback()
+        print(f"Error deleting UCF Global Records Release Forms: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error deleting UCF Global Records Release Forms: {str(e)}")
+
+# Virtual Check In Routes
+@router.post("/virtual-checkin/", response_model=schemas.VirtualCheckInRequest)
+async def create_virtual_checkin_request(
+    # Personal Information
+    ucf_id: str = Form(...),
+    sevis_id: str = Form(None),
+    given_name: str = Form(...),
+    family_name: str = Form(...),
+    visa_type: str = Form(...),  # F-1 or J-1
+    
+    # U.S. Address (THIS IS REQUIRED)
+    street_address: str = Form(...),
+    apartment_number: str = Form(None),
+    city: str = Form(...),
+    state: str = Form(...),
+    postal_code: str = Form(...),
+    us_telephone: str = Form(None),
+    has_us_telephone: bool = Form(True),
+    ucf_email: str = Form(...),
+    secondary_email: str = Form(None),
+    
+    # Emergency Contact
+    emergency_given_name: str = Form(None),
+    emergency_family_name: str = Form(None),
+    emergency_relationship: str = Form(None),
+    emergency_street_address: str = Form(None),
+    emergency_city: str = Form(None),
+    emergency_state_province: str = Form(None),
+    emergency_country: str = Form(None),
+    emergency_postal_code: str = Form(None),
+    emergency_us_telephone: str = Form(None),
+    emergency_non_us_telephone: str = Form(None),
+    emergency_has_us_telephone: bool = Form(True),
+    emergency_has_non_us_telephone: bool = Form(True),
+    emergency_email: str = Form(None),
+    
+    # Required Documents
+    visa_notice_of_action: UploadFile = File(None),
+    form_i94: UploadFile = File(None),
+    passport: UploadFile = File(None),
+    other_documents: UploadFile = File(None),
+    
+    # Dependent(s) Information - placeholder for future expansion
+    has_dependents: bool = Form(False),
+    
+    # Submission
+    authorization_checked: bool = Form(...),
+    
+    # Remarks
+    remarks: str = Form(None),
+    
+    db: Session = Depends(get_db)
+):
+    """Create a new Virtual Check In Request with file uploads"""
+    try:
+        print("Creating Virtual Check In Request...")
+        
+        # Create student name from given and family name
+        student_name = f"{given_name} {family_name}".strip()
+        
+        # Create form data dictionary
+        form_data = {
+            "ucf_id": ucf_id,
+            "sevis_id": sevis_id,
+            "given_name": given_name,
+            "family_name": family_name,
+            "visa_type": visa_type,
+            "street_address": street_address,
+            "apartment_number": apartment_number,
+            "city": city,
+            "state": state,
+            "postal_code": postal_code,
+            "us_telephone": us_telephone,
+            "has_us_telephone": has_us_telephone,
+            "ucf_email": ucf_email,
+            "secondary_email": secondary_email,
+            "emergency_given_name": emergency_given_name,
+            "emergency_family_name": emergency_family_name,
+            "emergency_relationship": emergency_relationship,
+            "emergency_street_address": emergency_street_address,
+            "emergency_city": emergency_city,
+            "emergency_state_province": emergency_state_province,
+            "emergency_country": emergency_country,
+            "emergency_postal_code": emergency_postal_code,
+            "emergency_us_telephone": emergency_us_telephone,
+            "emergency_non_us_telephone": emergency_non_us_telephone,
+            "emergency_has_us_telephone": emergency_has_us_telephone,
+            "emergency_has_non_us_telephone": emergency_has_non_us_telephone,
+            "emergency_email": emergency_email,
+            "has_dependents": has_dependents,
+            "authorization_checked": authorization_checked
+        }
+        
+        # Handle file uploads
+        upload_dir = "uploads/virtual_checkin"
+        os.makedirs(upload_dir, exist_ok=True)
+        
+        file_fields = {
+            "visa_notice_of_action": visa_notice_of_action,
+            "form_i94": form_i94,
+            "passport": passport,
+            "other_documents": other_documents
+        }
+        
+        for field_name, file in file_fields.items():
+            if file and file.filename:
+                file_path = await save_upload_file(file, upload_dir)
+                form_data[f"{field_name}_path"] = file_path
+                print(f"Saved {field_name}: {file_path}")
+        
+        # Create database record
+        db_request = models.VirtualCheckInRequest(
+            student_name=student_name,
+            student_id=ucf_id,
+            program="Virtual Check In",
+            submission_date=datetime.now(),
+            status="pending",
+            form_data=form_data,
+            remarks=remarks
+        )
+        
+        db.add(db_request)
+        db.commit()
+        db.refresh(db_request)
+        
+        print(f"Created Virtual Check In Request with ID: {db_request.id}")
+        return db_request
+        
+    except Exception as e:
+        db.rollback()
+        print(f"Error creating Virtual Check In Request: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=400, detail=f"Error processing Virtual Check In Request: {str(e)}")
+
+@router.get("/virtual-checkin/", response_model=List[schemas.VirtualCheckInRequest])
+def get_virtual_checkin_requests(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    """Retrieve Virtual Check In Requests"""
+    try:
+        requests = db.query(models.VirtualCheckInRequest).offset(skip).limit(limit).all()
+        print(f"Returning {len(requests)} Virtual Check In requests")
+        return requests
+    except Exception as e:
+        print(f"Error retrieving Virtual Check In requests: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error retrieving Virtual Check In requests: {str(e)}")
+
+@router.get("/virtual-checkin/{request_id}", response_model=schemas.VirtualCheckInRequest)
+def get_virtual_checkin_request(request_id: int, db: Session = Depends(get_db)):
+    """Retrieve a specific Virtual Check In Request"""
+    try:
+        db_request = db.query(models.VirtualCheckInRequest).filter(models.VirtualCheckInRequest.id == request_id).first()
+        if db_request is None:
+            raise HTTPException(status_code=404, detail="Virtual Check In request not found")
+        print(f"Returning Virtual Check In request with ID: {request_id}")
+        return db_request
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error retrieving Virtual Check In request: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error retrieving Virtual Check In request: {str(e)}")
+
+@router.delete("/virtual-checkin/{request_id}", status_code=204)
+def delete_virtual_checkin_request(request_id: int, db: Session = Depends(get_db)):
+    """Delete a specific Virtual Check In Request"""
+    try:
+        db_request = db.query(models.VirtualCheckInRequest).filter(models.VirtualCheckInRequest.id == request_id).first()
+        if db_request is None:
+            raise HTTPException(status_code=404, detail="Virtual Check In request not found")
+        
+        db.delete(db_request)
+        db.commit()
+        print(f"Deleted Virtual Check In request ID: {request_id}")
+        return {"message": "Virtual Check In request deleted successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        print(f"Error deleting Virtual Check In request: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error deleting Virtual Check In request: {str(e)}")
+
+@router.delete("/virtual-checkin/", status_code=204)
+def delete_all_virtual_checkin_requests(db: Session = Depends(get_db)):
+    """Delete all Virtual Check In Requests"""
+    try:
+        count = db.query(models.VirtualCheckInRequest).count()
+        db.query(models.VirtualCheckInRequest).delete()
+        db.commit()
+        print(f"Deleted {count} Virtual Check In requests")
+        return {"message": f"Successfully deleted {count} Virtual Check In requests"}
+    except Exception as e:
+        db.rollback()
+        print(f"Error deleting Virtual Check In requests: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error deleting Virtual Check In requests: {str(e)}")

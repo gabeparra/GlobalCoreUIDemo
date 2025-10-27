@@ -922,3 +922,113 @@ class GlobalTransferOutRequest(GlobalTransferOutRequestBase):
     class Config:
         from_attributes = True
         populate_by_name = True
+
+class UCFGlobalRecordsReleaseFormBase(BaseModel):
+    # Required basic fields
+    student_name: str
+    student_id: str
+    program: str = "UCF Global Records Release"
+
+    # Personal Information
+    ucf_id: Optional[str] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    ucf_email: Optional[str] = None
+    personal_email: Optional[str] = None
+
+    # Records Release Information
+    records_to_release: Optional[List[str]] = None
+    release_recipient: Optional[str] = None
+
+    # Authorization
+    authorization_checked: Optional[bool] = False
+    signature: Optional[str] = None
+    signature_date: Optional[str] = None
+
+    # Raw form data for debugging/completeness
+    raw_form_data: Optional[Dict[str, Any]] = None
+
+class UCFGlobalRecordsReleaseFormCreate(UCFGlobalRecordsReleaseFormBase):
+    # Also accept nested form_data structure from frontend
+    form_data: Optional[Dict[str, Any]] = None
+
+class UCFGlobalRecordsReleaseForm(UCFGlobalRecordsReleaseFormBase):
+    id: int
+    submission_date: datetime
+    status: str
+    form_data: Optional[Dict[str, Any]] = None
+
+    class Config:
+        from_attributes = True
+        populate_by_name = True
+
+class VirtualCheckInRequestBase(BaseModel):
+    # Required basic fields
+    student_name: str
+    student_id: str
+    program: str = "Virtual Check In"
+    
+    # Personal Information
+    ucf_id: Optional[str] = None
+    sevis_id: Optional[str] = None
+    given_name: Optional[str] = None
+    family_name: Optional[str] = None
+    visa_type: Optional[str] = None  # F-1 or J-1
+    
+    # U.S. Address (THIS IS REQUIRED)
+    street_address: Optional[str] = None
+    apartment_number: Optional[str] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
+    postal_code: Optional[str] = None
+    us_telephone: Optional[str] = None
+    has_us_telephone: Optional[bool] = True
+    ucf_email: Optional[str] = None
+    secondary_email: Optional[str] = None
+    
+    # Emergency Contact
+    emergency_given_name: Optional[str] = None
+    emergency_family_name: Optional[str] = None
+    emergency_relationship: Optional[str] = None
+    emergency_street_address: Optional[str] = None
+    emergency_city: Optional[str] = None
+    emergency_state_province: Optional[str] = None
+    emergency_country: Optional[str] = None
+    emergency_postal_code: Optional[str] = None
+    emergency_us_telephone: Optional[str] = None
+    emergency_non_us_telephone: Optional[str] = None
+    emergency_has_us_telephone: Optional[bool] = True
+    emergency_has_non_us_telephone: Optional[bool] = True
+    emergency_email: Optional[str] = None
+    
+    # Required Documents (file paths will be stored)
+    visa_notice_of_action_path: Optional[str] = None
+    form_i94_path: Optional[str] = None
+    passport_path: Optional[str] = None
+    other_documents_path: Optional[str] = None
+    
+    # Dependent(s) Information - placeholder for future expansion
+    has_dependents: Optional[bool] = False
+    
+    # Submission
+    authorization_checked: Optional[bool] = False
+    
+    # Remarks
+    remarks: Optional[str] = None
+    
+    # Raw form data for debugging/completeness
+    raw_form_data: Optional[Dict[str, Any]] = None
+
+class VirtualCheckInRequestCreate(VirtualCheckInRequestBase):
+    pass
+
+class VirtualCheckInRequest(VirtualCheckInRequestBase):
+    id: int
+    submission_date: datetime
+    status: str
+    form_data: Optional[Dict[str, Any]] = None
+    remarks: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+        populate_by_name = True

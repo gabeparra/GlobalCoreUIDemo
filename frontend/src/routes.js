@@ -26,7 +26,9 @@ const LinkagesApplicationForm = lazy(() => import('./views/forms/LinkagesApplica
 const ReducedCourseLoadRequestForm = lazy(() => import('./views/forms/ReducedCourseLoadRequestForm'))
 const SpeakTestRegistrationForm = lazy(() => import('./views/forms/SpeakTestRegistrationForm'))
 const GlobalTransferOutForm = lazy(() => import('./views/forms/GlobalTransferOutForm'))
+const UCFGlobalRecordsReleaseForm = lazy(() => import('./views/forms/UCFGlobalRecordsReleaseForm'))
 const TravelApprovalPetitionForm = lazy(() => import('./views/forms/TravelApprovalPetitionForm'))
+const VirtualCheckInForm = lazy(() => import('./views/forms/VirtualCheckInForm'))
 
 const routes = [
   { path: '/', exact: true, name: 'Home', element: LandingPage },
@@ -51,7 +53,9 @@ const routes = [
   { path: '/forms/reduced-course-load', name: 'Reduced Course Load Request', element: ReducedCourseLoadRequestForm },
   { path: '/forms/speak-test-registration', name: 'SPEAK Test Registration', element: SpeakTestRegistrationForm },
   { path: '/forms/global-transfer-out', name: 'Global Transfer Out', element: GlobalTransferOutForm },
-  { path: '/forms/travel-approval-petition', name: 'Travel Approval Petition', element: TravelApprovalPetitionForm }
+  { path: '/forms/travel-approval-petition', name: 'Travel Approval Petition', element: TravelApprovalPetitionForm },
+  { path: '/forms/ucf-global-records-release', name: 'UCF Global Records Release', element: UCFGlobalRecordsReleaseForm },
+  { path: '/forms/virtual-checkin', name: 'Virtual Check In', element: VirtualCheckInForm }
 ]
 
 export default routes

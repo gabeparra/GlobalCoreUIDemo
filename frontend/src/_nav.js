@@ -120,12 +120,6 @@ const _nav = [
       },
       {
         component: CNavItem,
-        name: 'All Submissions',
-        to: '/forms/all-requests',
-        icon: <CIcon icon={cilUser} customClassName="nav-icon" />,
-      },
-      {
-        component: CNavItem,
         name: 'SPEAK Test Registration',
         to: '/forms/speak-test-registration',
         icon: <CIcon icon={cilPencil} customClassName="nav-icon" />,
@@ -141,6 +135,24 @@ const _nav = [
         name: 'Travel Approval Petition',
         to: '/forms/travel-approval-petition',
         icon: <CIcon icon={cilPencil} customClassName="nav-icon" />,
+      },
+      {
+        component: CNavItem,
+        name: 'UCF Global Records Release',
+        to: '/forms/ucf-global-records-release',
+        icon: <CIcon icon={cilPencil} customClassName="nav-icon" />,
+      },
+      {
+        component: CNavItem,
+        name: 'Virtual Check In',
+        to: '/forms/virtual-checkin',
+        icon: <CIcon icon={cilPencil} customClassName="nav-icon" />,
+      },
+      {
+        component: CNavItem,
+        name: 'All Submissions',
+        to: '/forms/all-requests',
+        icon: <CIcon icon={cilUser} customClassName="nav-icon" />,
       },
     ],
   },
