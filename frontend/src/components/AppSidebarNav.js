@@ -14,10 +14,10 @@ export const AppSidebarNav = ({ items }) => {
         {icon
           ? icon
           : indent && (
-              <span className="nav-icon">
-                <span className="nav-icon-bullet"></span>
-              </span>
-            )}
+            <span className="nav-icon">
+              <span className="nav-icon-bullet"></span>
+            </span>
+          )}
         {name && name}
         {badge && (
           <CBadge color={badge.color} className="ms-auto" size="sm">
@@ -32,17 +32,20 @@ export const AppSidebarNav = ({ items }) => {
     const { component, name, badge, icon, ...rest } = item
     const Component = component
     return (
-      <Component as="div" key={index}>
+      <Component as="div" key={index} className="sidebar-nav-item">
         {rest.to || rest.href ? (
           <CNavLink
             {...(rest.to && { as: NavLink })}
             {...(rest.href && { target: '_blank', rel: 'noopener noreferrer' })}
             {...rest}
+            className="sidebar-nav-link"
           >
             {navLink(name, icon, badge, indent)}
           </CNavLink>
         ) : (
-          navLink(name, icon, badge, indent)
+          <div className="sidebar-nav-link">
+            {navLink(name, icon, badge, indent)}
+          </div>
         )}
       </Component>
     )

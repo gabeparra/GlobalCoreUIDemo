@@ -32,26 +32,22 @@ const AppSidebar = () => {
         dispatch({ type: 'set', sidebarShow: visible })
       }}
     >
-      <CSidebarHeader className="border-bottom">
-        <CSidebarBrand to="/">
-          <div className="sidebar-brand-full">
-            <strong>UCF Global</strong>
-          </div>
-          <div className="sidebar-brand-narrow">
-            <strong>UCF</strong>
-          </div>
-        </CSidebarBrand>
-        <CCloseButton
-          className="d-lg-none"
-          dark
-          onClick={() => dispatch({ type: 'set', sidebarShow: false })}
-        />
+      <CSidebarHeader className="sidebar-header-custom">
+        <div className="sidebar-header-content">
+          <CSidebarBrand to="/" className="sidebar-brand-custom">
+            <div className="sidebar-brand-full">
+              <strong>UCF Global</strong>
+            </div>
+          </CSidebarBrand>
+          <CCloseButton
+            className="d-lg-none"
+            dark
+            onClick={() => dispatch({ type: 'set', sidebarShow: false })}
+          />
+        </div>
       </CSidebarHeader>
       <AppSidebarNav items={navigation} />
-      <CSidebarFooter className="border-top d-none d-lg-flex">
-        <CSidebarToggler
-          onClick={() => dispatch({ type: 'set', sidebarUnfoldable: !unfoldable })}
-        />
+      <CSidebarFooter style={{ minHeight: 'auto' }}>
       </CSidebarFooter>
     </CSidebar>
   )

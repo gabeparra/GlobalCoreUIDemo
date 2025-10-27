@@ -40,21 +40,16 @@ const AppHeader = () => {
   }, [])
 
   return (
-    <CHeader position="sticky" className="mb-4 p-0" ref={headerRef}>
-      <CContainer className="border-bottom px-4" fluid>
+    <CHeader position="sticky" className="mb-1 p-0" ref={headerRef} style={{ minHeight: 'auto' }}>
+      <CContainer fluid className="px-4 py-1 border-" style={{ padding: '0.25rem 1rem', minHeight: 'auto' }}>
         <CHeaderToggler
           onClick={() => dispatch({ type: 'set', sidebarShow: !sidebarShow })}
           style={{ marginInlineStart: '-14px' }}
         >
           <CIcon icon={cilMenu} size="lg" />
         </CHeaderToggler>
+        <AppBreadcrumb />
         <CHeaderNav className="d-none d-md-flex">
-          <CNavItem>
-            <CNavLink to="/" as={NavLink}>
-              <CIcon icon={cilHome} size="lg" className="me-2" />
-              Home
-            </CNavLink>
-          </CNavItem>
         </CHeaderNav>
         <CHeaderNav className="ms-auto">
           <li className="nav-item py-1">
@@ -101,9 +96,6 @@ const AppHeader = () => {
             </CDropdownMenu>
           </CDropdown>
         </CHeaderNav>
-      </CContainer>
-      <CContainer className="px-4" fluid>
-        <AppBreadcrumb />
       </CContainer>
     </CHeader>
   )

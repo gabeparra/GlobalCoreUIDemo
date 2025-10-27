@@ -15,16 +15,14 @@ body {
   @include transition(padding .15s);
 }
 
-.header>.container-fluid,
-.sidebar-header {
-  min-height: calc(4rem + 1px); // stylelint-disable-line function-disallowed-list
-}
-
-.sidebar-brand-full {
-  margin-left: 3px;
+.header>.container-fluid {
+  min-height: calc(4rem + 1px);
 }
 
 .sidebar-header {
+  min-height: auto !important;
+  padding: 0 !important;
+
   .nav-underline-border {
     --cui-nav-underline-border-link-padding-x: 1rem;
     --cui-nav-underline-border-gap: 0;
@@ -33,8 +31,43 @@ body {
   .nav-link {
     display: flex;
     align-items: center;
-    min-height: calc(4rem + 1px); // stylelint-disable-line function-disallowed-list
+    min-height: auto !important;
   }
+}
+
+.sidebar-brand-full {
+  margin-left: 0 !important;
+  /* Remove the 3px margin */
+}
+
+.sidebar-toggler {
+  margin-inline-start: auto;
+}
+
+// Clean sidebar header styling to match main header
+.sidebar-header-custom {
+  border-bottom: 1px solid var(--cui-border-color);
+  margin-bottom: 0.25rem; // mb-1 equivalent
+  padding: 0;
+  min-height: auto !important;
+}
+
+.sidebar-header-content {
+  padding: 0.25rem 2.5rem; // px-4 py-1 equivalent
+  min-height: 3rem; // Match main header height
+  display: flex;
+  align-items: center;
+}
+
+.sidebar-brand-custom {
+  margin-inline-start: -14px; // Match header toggler offset
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.sidebar-brand-full {
+  margin-left: 0 !important; // Override CoreUI default
 }
 
 .sidebar-toggler {
@@ -47,6 +80,64 @@ body {
     margin-inline-end: auto;
   }
 }
+
+// Target CoreUI's actual sidebar navigation classes
+.sidebar .nav-link {
+  white-space: normal !important;
+  margin-bottom: 5px !important;
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
+  word-break: break-word !important;
+  line-height: 1.3 !important;
+  padding: 0.5rem 1rem !important;
+}
+
+// Target the nav items specifically
+.sidebar .nav-item {
+  width: 100% !important;
+}
+
+// Target the text content in nav links
+.sidebar .nav-link span {
+  white-space: normal !important;
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
+  word-break: break-word !important;
+  flex: 1 !important;
+  min-width: 0 !important;
+  /* This is crucial for text wrapping */
+}
+
+// Specific targeting for CoreUI sidebar nav
+.sidebar-nav .nav-link {
+  white-space: normal !important;
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
+  word-break: break-word !important;
+  display: flex !important;
+  align-items: flex-start !important;
+  /* Changed from center to allow multi-line */
+  padding: 0.5rem 1rem !important;
+  line-height: 1.3 !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 4px !important;
+  margin: 2px 5px !important;
+  background-color: rgba(255, 255, 255, 0.02) !important;
+}
+
+.sidebar-nav .nav-link:hover {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+// Make sure icons don't interfere
+.sidebar-nav .nav-icon {
+  margin-right: 0.5rem !important;
+  flex-shrink: 0 !important;
+  margin-top: 0.1rem !important;
+  /* Slight adjustment for multi-line text */
+}
+
 
 .header>.container-fluid+.container-fluid {
   min-height: 3rem;
