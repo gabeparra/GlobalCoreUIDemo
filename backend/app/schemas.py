@@ -189,8 +189,8 @@ class AdministrativeRecordRequestBase(BaseModel):
     ucf_id: Optional[str] = None
     sevis_id: Optional[str] = None
     date: Optional[str] = None
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None
+    given_name: Optional[str] = None
+    family_name: Optional[str] = None
     student_email: Optional[str] = None
     preferred_phone: Optional[str] = None
     current_program: Optional[str] = None
@@ -226,8 +226,8 @@ class ConversationPartnerRequestBase(BaseModel):
     program: str = "Conversation Partner"
     
     # Personal Information
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None
+    given_name: Optional[str] = None
+    family_name: Optional[str] = None
     ucf_id: Optional[str] = None
     email: Optional[str] = None
     phone: Optional[str] = None
@@ -340,8 +340,8 @@ class DocumentRequestBase(BaseModel):
     # Personal Information
     request_id: Optional[str] = None
     ucf_id: Optional[str] = None
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None
+    given_name: Optional[str] = None
+    family_name: Optional[str] = None
     email: Optional[str] = None
     phone_number: Optional[str] = None
     date_of_birth: Optional[str] = None
@@ -374,8 +374,8 @@ class EnglishLanguageVolunteerRequestBase(BaseModel):
     
     # Personal information
     ucf_id: Optional[str] = None
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None
+    given_name: Optional[str] = None
+    family_name: Optional[str] = None
     ucf_email: Optional[str] = None
     academic_level: Optional[str] = None
     
@@ -431,8 +431,8 @@ class OffCampusHousingRequestBase(BaseModel):
     
     # Personal information
     ucf_id: Optional[str] = None
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None
+    given_name: Optional[str] = None
+    family_name: Optional[str] = None
     date_of_birth: Optional[str] = None
     gender: Optional[str] = None
     email_address: Optional[str] = None
@@ -471,11 +471,11 @@ class FloridaStatute101035RequestBase(BaseModel):
     
     # Personal information
     ucf_id: Optional[str] = None
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None
+    given_name: Optional[str] = None
+    family_name: Optional[str] = None
     date_of_birth: Optional[str] = None
     telephone_number: Optional[str] = None
-    email_address: Optional[str] = None
+    email: Optional[str] = None
     sevis_number: Optional[str] = None
     
     # University information
@@ -608,8 +608,8 @@ class OptStemExtensionApplicationBase(BaseModel):
     employment_city: Optional[str] = None
     employment_state: Optional[str] = None
     employment_postal_code: Optional[str] = None
-    supervisor_first_name: Optional[str] = None
-    supervisor_last_name: Optional[str] = None
+    supervisor_given_name: Optional[str] = None
+    supervisor_family_name: Optional[str] = None
     supervisor_email: Optional[str] = None
     supervisor_telephone: Optional[str] = None
     hours_per_week: Optional[str] = None
@@ -722,8 +722,8 @@ class PathwayProgramsIntentToProgressBase(BaseModel):
 
     # Student Information
     ucf_id: Optional[str] = None
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None
+    given_name: Optional[str] = None
+    family_name: Optional[str] = None
     date_of_birth: Optional[str] = None
     ethnicity: Optional[str] = None
 
@@ -794,8 +794,8 @@ class PathwayProgramsNextStepsBase(BaseModel):
 
     # Personal Information
     ucf_id: Optional[str] = None
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None
+    given_name: Optional[str] = None
+    family_name: Optional[str] = None
     legal_sex: Optional[str] = None
     email: Optional[str] = None
     phone_number: Optional[str] = None
@@ -946,8 +946,8 @@ class UCFGlobalRecordsReleaseFormBase(BaseModel):
 
     # Personal Information
     ucf_id: Optional[str] = None
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None
+    given_name: Optional[str] = None
+    family_name: Optional[str] = None
     ucf_email: Optional[str] = None
     personal_email: Optional[str] = None
 

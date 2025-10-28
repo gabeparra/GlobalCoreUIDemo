@@ -5,15 +5,17 @@ from typing import List, Optional
 import os
 import uuid
 from pathlib import Path
-
+from app.route_helpers import create_db_record, commit_to_db, UPLOAD_PATHS, save_upload_file, create_form_data_dict, convert_multiple_bools, save_multiple_files
 from app import models, schemas
 from app.database import get_db
 
 router = APIRouter()
 
+
 @router.get("/")
 async def root():
     return {"message": "Welcome to the I-20 Request API"}
+
 
 @router.post("/debug/", status_code=200)
 async def debug_endpoint(request_body: dict):
@@ -25,14 +27,16 @@ async def debug_endpoint(request_body: dict):
         "message": "This is a debug endpoint that echoes back any JSON sent to it"
     }
 
+
 @router.post("/i20-requests/", response_model=schemas.I20Request)
 def create_i20_request(request: schemas.I20RequestCreate, db: Session = Depends(get_db)):
     try:
         print(f"Received request: {request}")
-        
+
         # Convert the request model to a dict for JSON storage
-        form_data = request.dict(exclude={"student_name", "student_id", "program", "other_reason"})
-        
+        form_data = request.dict(
+            exclude={"student_name", "student_id", "program", "other_reason"})
+
         # Create the database record
         db_request = models.I20Request(
             student_name=request.student_name,
@@ -43,7 +47,7 @@ def create_i20_request(request: schemas.I20RequestCreate, db: Session = Depends(
             form_data=form_data,
             other_reason=request.other_reason
         )
-        
+
         db.add(db_request)
         db.commit()
         db.refresh(db_request)
@@ -52,33 +56,41 @@ def create_i20_request(request: schemas.I20RequestCreate, db: Session = Depends(
         print(f"Error processing request: {str(e)}")
         import traceback
         traceback.print_exc()
-        raise HTTPException(status_code=400, detail=f"Error processing request: {str(e)}")
+        raise HTTPException(
+            status_code=400, detail=f"Error processing request: {str(e)}")
+
 
 @router.get("/i20-requests/", response_model=List[schemas.I20Request])
 def get_i20_requests(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     requests = db.query(models.I20Request).offset(skip).limit(limit).all()
-    print(f"Returning {len(requests)} requests with data: {requests[0].form_data if requests else 'No requests'}")
+    print(
+        f"Returning {len(requests)} requests with data: {requests[0].form_data if requests else 'No requests'}")
     return requests
+
 
 @router.get("/i20-requests/{request_id}", response_model=schemas.I20Request)
 def get_i20_request(request_id: int, db: Session = Depends(get_db)):
-    db_request = db.query(models.I20Request).filter(models.I20Request.id == request_id).first()
+    db_request = db.query(models.I20Request).filter(
+        models.I20Request.id == request_id).first()
     if db_request is None:
         raise HTTPException(status_code=404, detail="I-20 request not found")
     print(f"Returning single request with data: {db_request.form_data}")
     return db_request
 
+
 @router.delete("/i20-requests/{request_id}", status_code=204)
 def delete_i20_request(request_id: int, db: Session = Depends(get_db)):
     """Delete a specific I-20 request"""
-    db_request = db.query(models.I20Request).filter(models.I20Request.id == request_id).first()
+    db_request = db.query(models.I20Request).filter(
+        models.I20Request.id == request_id).first()
     if db_request is None:
         raise HTTPException(status_code=404, detail="I-20 request not found")
-    
+
     db.delete(db_request)
     db.commit()
     print(f"Deleted I-20 request ID: {request_id}")
     return {"message": "I-20 request deleted successfully"}
+
 
 @router.delete("/i20-requests/", status_code=204)
 def delete_all_i20_requests(db: Session = Depends(get_db)):
@@ -86,39 +98,19 @@ def delete_all_i20_requests(db: Session = Depends(get_db)):
     try:
         # Count how many records will be deleted
         count = db.query(models.I20Request).count()
-        
+
         # Delete all records
         db.query(models.I20Request).delete()
         db.commit()
-        
+
         print(f"Deleted {count} I-20 requests")
         return {"message": f"Successfully deleted {count} I-20 requests"}
     except Exception as e:
         db.rollback()
         print(f"Error deleting I-20 requests: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error deleting I-20 requests: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error deleting I-20 requests: {str(e)}")
 
-# Helper function to save uploaded files
-async def save_upload_file(upload_file: UploadFile, destination_dir: str) -> str:
-    """Save an uploaded file and return its path"""
-    if not upload_file:
-        return None
-    
-    # Create destination directory if it doesn't exist
-    Path(destination_dir).mkdir(parents=True, exist_ok=True)
-    
-    # Generate unique filename
-    file_extension = os.path.splitext(upload_file.filename)[1]
-    unique_filename = f"{uuid.uuid4()}{file_extension}"
-    file_path = os.path.join(destination_dir, unique_filename)
-    
-    # Save file
-    with open(file_path, "wb") as buffer:
-        content = await upload_file.read()
-        buffer.write(content)
-    
-    print(f"Saved file: {file_path} (original: {upload_file.filename})")
-    return file_path
 
 # Academic Training Routes
 @router.post("/academic-training/", response_model=schemas.AcademicTrainingRequest)
@@ -128,7 +120,7 @@ async def create_academic_training_request(
     student_id: str = Form(...),
     program: str = Form(...),
     completion_type: str = Form(...),
-    
+
     # Personal Information
     sevis_id: str = Form(None),
     given_name: str = Form(None),
@@ -139,172 +131,161 @@ async def create_academic_training_request(
     country_of_birth: str = Form(None),
     country_of_citizenship: str = Form(None),
     country_of_legal_residence: str = Form(None),
-    
+
     # U.S. Address
     has_us_address: str = Form("true"),
     street_address: str = Form(None),
     city: str = Form(None),
     state: str = Form(None),
     country: str = Form(None),
-    
+
     # Contact Information
     us_telephone: str = Form(None),
     non_us_telephone: str = Form(None),
-    
+
     # Questionnaire
     enrolled_full_time: str = Form(None),
     academic_training_start_date: str = Form(None),
     academic_training_end_date: str = Form(None),
     employed_on_campus: str = Form(None),
     previously_authorized: str = Form(None),
-    
+
     # Statements of Agreement
     understand_pre_completion: str = Form(None),
     understand_post_completion: str = Form(None),
     understand_medical_insurance: str = Form(None),
     understand_employer_specific: str = Form(None),
     understand_consult_advisor: str = Form(None),
-    
+
     # Submission
     comments: str = Form(None),
     certify_information: str = Form(None),
-    
+
     # File uploads
     offer_letter: UploadFile = File(None),
     training_authorization: UploadFile = File(None),
-    
+
     db: Session = Depends(get_db)
 ):
     try:
-        print(f"Received Academic Training request from: {student_name}")
-        print(f"Files received - Offer Letter: {offer_letter.filename if offer_letter else 'None'}, Training Auth: {training_authorization.filename if training_authorization else 'None'}")
-        
-        # Save uploaded files
-        offer_letter_path = None
-        training_auth_path = None
-        
-        if offer_letter and offer_letter.filename:
-            offer_letter_path = await save_upload_file(offer_letter, "uploads/academic_training/offer_letters")
-        
-        if training_authorization and training_authorization.filename:
-            training_auth_path = await save_upload_file(training_authorization, "uploads/academic_training/training_authorizations")
-        
-        # Convert string booleans to actual booleans
-        has_us_address_bool = has_us_address.lower() == 'true' if has_us_address else True
-        enrolled_full_time_bool = enrolled_full_time.lower() == 'true' if enrolled_full_time else False
-        employed_on_campus_bool = employed_on_campus.lower() == 'true' if employed_on_campus else False
-        previously_authorized_bool = previously_authorized.lower() == 'true' if previously_authorized else False
-        understand_pre_bool = understand_pre_completion.lower() == 'true' if understand_pre_completion else False
-        understand_post_bool = understand_post_completion.lower() == 'true' if understand_post_completion else False
-        understand_med_bool = understand_medical_insurance.lower() == 'true' if understand_medical_insurance else False
-        understand_emp_bool = understand_employer_specific.lower() == 'true' if understand_employer_specific else False
-        understand_consult_bool = understand_consult_advisor.lower() == 'true' if understand_consult_advisor else False
-        certify_bool = certify_information.lower() == 'true' if certify_information else False
-        
-        # Prepare form data for JSON storage
-        form_data = {
-            "sevis_id": sevis_id,
-            "given_name": given_name,
-            "family_name": family_name,
-            "legal_sex": legal_sex,
-            "date_of_birth": date_of_birth,
-            "city_of_birth": city_of_birth,
-            "country_of_birth": country_of_birth,
-            "country_of_citizenship": country_of_citizenship,
-            "country_of_legal_residence": country_of_legal_residence,
-            "has_us_address": has_us_address_bool,
-            "street_address": street_address,
-            "city": city,
-            "state": state,
-            "country": country,
-            "us_telephone": us_telephone,
-            "non_us_telephone": non_us_telephone,
-            "enrolled_full_time": enrolled_full_time_bool,
-            "academic_training_start_date": academic_training_start_date,
-            "academic_training_end_date": academic_training_end_date,
-            "employed_on_campus": employed_on_campus_bool,
-            "previously_authorized": previously_authorized_bool,
-            "understand_pre_completion": understand_pre_bool,
-            "understand_post_completion": understand_post_bool,
-            "understand_medical_insurance": understand_med_bool,
-            "understand_employer_specific": understand_emp_bool,
-            "understand_consult_advisor": understand_consult_bool,
-            "certify_information": certify_bool,
-            "offer_letter_path": offer_letter_path,
-            "training_authorization_path": training_auth_path
-        }
-        
-        # Create the database record
-        db_request = models.AcademicTrainingRequest(
-            student_name=student_name,
-            student_id=student_id,
-            program=program,
+        # Save files with student ID
+        file_paths = await save_multiple_files(
+            files_dict={
+                'offer_letter': offer_letter,
+                'training_authorization': training_authorization
+            },
+            destination_dir=UPLOAD_PATHS["academic_training"],
+            ucf_id=student_id
+        )
+
+        # Convert all booleans at once
+        bool_fields = convert_multiple_bools({
+            "has_us_address": has_us_address,
+            "enrolled_full_time": enrolled_full_time,
+            "employed_on_campus": employed_on_campus,
+            "previously_authorized": previously_authorized,
+            "understand_pre_completion": understand_pre_completion,
+            "understand_post_completion": understand_post_completion,
+            "understand_medical_insurance": understand_medical_insurance,
+            "understand_employer_specific": understand_employer_specific,
+            "understand_consult_advisor": understand_consult_advisor,
+            "certify_information": certify_information
+        })
+
+        # Create form data
+        form_data = create_form_data_dict(
+            ucf_id=student_id,
+            given_name=given_name,
+            family_name=family_name,
+            sevis_id=sevis_id,
+            legal_sex=legal_sex,
+            date_of_birth=date_of_birth,
+            city_of_birth=city_of_birth,
+            country_of_birth=country_of_birth,
+            country_of_citizenship=country_of_citizenship,
+            country_of_legal_residence=country_of_legal_residence,
+            street_address=street_address,
+            city=city,
+            state=state,
+            country=country,
+            us_telephone=us_telephone,
+            non_us_telephone=non_us_telephone,
+            academic_training_start_date=academic_training_start_date,
+            academic_training_end_date=academic_training_end_date,
             completion_type=completion_type,
-            submission_date=datetime.now(),
-            status="pending",
-            form_data=form_data,
+            **file_paths,
+            **bool_fields
+        )
+
+        db_request = create_db_record(
+            models.AcademicTrainingRequest,
+            student_id, given_name, family_name,
+            program,
+            form_data,
+            completion_type=completion_type,
             comments=comments
         )
-        
-        db.add(db_request)
-        db.commit()
-        db.refresh(db_request)
-        
-        print(f"Academic Training request created with ID: {db_request.id}")
-        
-        # Return response with file paths
-        return db_request
-        
+
+        return commit_to_db(db, db_request)
+
     except Exception as e:
-        print(f"Error processing Academic Training request: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(status_code=400, detail=f"Error processing Academic Training request: {str(e)}")
+        db.rollback()
+        raise HTTPException(status_code=400, detail=str(e))
+
 
 @router.get("/academic-training/", response_model=List[schemas.AcademicTrainingRequest])
 def get_academic_training_requests(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    requests = db.query(models.AcademicTrainingRequest).offset(skip).limit(limit).all()
+    requests = db.query(models.AcademicTrainingRequest).offset(
+        skip).limit(limit).all()
     print(f"Returning {len(requests)} Academic Training requests")
     return requests
 
+
 @router.get("/academic-training/{request_id}", response_model=schemas.AcademicTrainingRequest)
 def get_academic_training_request(request_id: int, db: Session = Depends(get_db)):
-    db_request = db.query(models.AcademicTrainingRequest).filter(models.AcademicTrainingRequest.id == request_id).first()
+    db_request = db.query(models.AcademicTrainingRequest).filter(
+        models.AcademicTrainingRequest.id == request_id).first()
     if db_request is None:
-        raise HTTPException(status_code=404, detail="Academic Training request not found")
+        raise HTTPException(
+            status_code=404, detail="Academic Training request not found")
     print(f"Returning Academic Training request with ID: {request_id}")
     return db_request
+
 
 @router.delete("/academic-training/{request_id}", status_code=204)
 def delete_academic_training_request(request_id: int, db: Session = Depends(get_db)):
     """Delete a specific Academic Training request"""
-    db_request = db.query(models.AcademicTrainingRequest).filter(models.AcademicTrainingRequest.id == request_id).first()
+    db_request = db.query(models.AcademicTrainingRequest).filter(
+        models.AcademicTrainingRequest.id == request_id).first()
     if db_request is None:
-        raise HTTPException(status_code=404, detail="Academic Training request not found")
-    
+        raise HTTPException(
+            status_code=404, detail="Academic Training request not found")
+
     # Delete associated files if they exist
     if db_request.form_data:
         offer_letter_path = db_request.form_data.get('offer_letter_path')
-        training_auth_path = db_request.form_data.get('training_authorization_path')
-        
+        training_auth_path = db_request.form_data.get(
+            'training_authorization_path')
+
         if offer_letter_path and os.path.exists(offer_letter_path):
             try:
                 os.remove(offer_letter_path)
                 print(f"Deleted file: {offer_letter_path}")
             except Exception as e:
                 print(f"Error deleting file {offer_letter_path}: {str(e)}")
-        
+
         if training_auth_path and os.path.exists(training_auth_path):
             try:
                 os.remove(training_auth_path)
                 print(f"Deleted file: {training_auth_path}")
             except Exception as e:
                 print(f"Error deleting file {training_auth_path}: {str(e)}")
-    
+
     db.delete(db_request)
     db.commit()
     print(f"Deleted Academic Training request ID: {request_id}")
     return {"message": "Academic Training request deleted successfully"}
+
 
 @router.delete("/academic-training/", status_code=204)
 def delete_all_academic_training_requests(db: Session = Depends(get_db)):
@@ -312,48 +293,55 @@ def delete_all_academic_training_requests(db: Session = Depends(get_db)):
     try:
         # Get all requests to delete associated files
         all_requests = db.query(models.AcademicTrainingRequest).all()
-        
+
         # Delete associated files
         for request in all_requests:
             if request.form_data:
                 offer_letter_path = request.form_data.get('offer_letter_path')
-                training_auth_path = request.form_data.get('training_authorization_path')
-                
+                training_auth_path = request.form_data.get(
+                    'training_authorization_path')
+
                 if offer_letter_path and os.path.exists(offer_letter_path):
                     try:
                         os.remove(offer_letter_path)
                     except Exception as e:
-                        print(f"Error deleting file {offer_letter_path}: {str(e)}")
-                
+                        print(
+                            f"Error deleting file {offer_letter_path}: {str(e)}")
+
                 if training_auth_path and os.path.exists(training_auth_path):
                     try:
                         os.remove(training_auth_path)
                     except Exception as e:
-                        print(f"Error deleting file {training_auth_path}: {str(e)}")
-        
+                        print(
+                            f"Error deleting file {training_auth_path}: {str(e)}")
+
         # Count how many records will be deleted
         count = len(all_requests)
-        
+
         # Delete all records
         db.query(models.AcademicTrainingRequest).delete()
         db.commit()
-        
+
         print(f"Deleted {count} Academic Training requests and their files")
         return {"message": f"Successfully deleted {count} Academic Training requests"}
     except Exception as e:
         db.rollback()
         print(f"Error deleting Academic Training requests: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error deleting Academic Training requests: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error deleting Academic Training requests: {str(e)}")
 
 # Administrative Record Change Routes
+
+
 @router.post("/administrative-record/", response_model=schemas.AdministrativeRecordRequest)
 def create_administrative_record_request(request: schemas.AdministrativeRecordRequestCreate, db: Session = Depends(get_db)):
     try:
         print(f"Received Administrative Record request: {request}")
-        
+
         # Convert the request model to a dict for JSON storage
-        form_data = request.dict(exclude={"student_name", "student_id", "program"})
-        
+        form_data = request.dict(
+            exclude={"student_name", "student_id", "program"})
+
         # Create the database record
         db_request = models.AdministrativeRecordRequest(
             student_name=request.student_name,
@@ -363,44 +351,55 @@ def create_administrative_record_request(request: schemas.AdministrativeRecordRe
             status="pending",
             form_data=form_data
         )
-        
+
         db.add(db_request)
         db.commit()
         db.refresh(db_request)
-        
-        print(f"Administrative Record request created with ID: {db_request.id}")
+
+        print(
+            f"Administrative Record request created with ID: {db_request.id}")
         return db_request
     except Exception as e:
         print(f"Error processing Administrative Record request: {str(e)}")
         import traceback
         traceback.print_exc()
-        raise HTTPException(status_code=400, detail=f"Error processing Administrative Record request: {str(e)}")
+        raise HTTPException(
+            status_code=400, detail=f"Error processing Administrative Record request: {str(e)}")
+
 
 @router.get("/administrative-record/", response_model=List[schemas.AdministrativeRecordRequest])
 def get_administrative_record_requests(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    requests = db.query(models.AdministrativeRecordRequest).offset(skip).limit(limit).all()
+    requests = db.query(models.AdministrativeRecordRequest).offset(
+        skip).limit(limit).all()
     print(f"Returning {len(requests)} Administrative Record requests")
     return requests
 
+
 @router.get("/administrative-record/{request_id}", response_model=schemas.AdministrativeRecordRequest)
 def get_administrative_record_request(request_id: int, db: Session = Depends(get_db)):
-    db_request = db.query(models.AdministrativeRecordRequest).filter(models.AdministrativeRecordRequest.id == request_id).first()
+    db_request = db.query(models.AdministrativeRecordRequest).filter(
+        models.AdministrativeRecordRequest.id == request_id).first()
     if db_request is None:
-        raise HTTPException(status_code=404, detail="Administrative Record request not found")
+        raise HTTPException(
+            status_code=404, detail="Administrative Record request not found")
     print(f"Returning Administrative Record request with ID: {request_id}")
     return db_request
+
 
 @router.delete("/administrative-record/{request_id}", status_code=204)
 def delete_administrative_record_request(request_id: int, db: Session = Depends(get_db)):
     """Delete a specific Administrative Record request"""
-    db_request = db.query(models.AdministrativeRecordRequest).filter(models.AdministrativeRecordRequest.id == request_id).first()
+    db_request = db.query(models.AdministrativeRecordRequest).filter(
+        models.AdministrativeRecordRequest.id == request_id).first()
     if db_request is None:
-        raise HTTPException(status_code=404, detail="Administrative Record request not found")
-    
+        raise HTTPException(
+            status_code=404, detail="Administrative Record request not found")
+
     db.delete(db_request)
     db.commit()
     print(f"Deleted Administrative Record request ID: {request_id}")
     return {"message": "Administrative Record request deleted successfully"}
+
 
 @router.delete("/administrative-record/", status_code=204)
 def delete_all_administrative_record_requests(db: Session = Depends(get_db)):
@@ -408,27 +407,31 @@ def delete_all_administrative_record_requests(db: Session = Depends(get_db)):
     try:
         # Count how many records will be deleted
         count = db.query(models.AdministrativeRecordRequest).count()
-        
+
         # Delete all records
         db.query(models.AdministrativeRecordRequest).delete()
         db.commit()
-        
+
         print(f"Deleted {count} Administrative Record requests")
         return {"message": f"Successfully deleted {count} Administrative Record requests"}
     except Exception as e:
         db.rollback()
         print(f"Error deleting Administrative Record requests: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error deleting Administrative Record requests: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error deleting Administrative Record requests: {str(e)}")
 
 # Conversation Partner Routes
+
+
 @router.post("/conversation-partner/", response_model=schemas.ConversationPartnerRequest)
 def create_conversation_partner_request(request: schemas.ConversationPartnerRequestCreate, db: Session = Depends(get_db)):
     try:
         print(f"Received Conversation Partner request: {request}")
-        
+
         # Convert the request model to a dict for JSON storage
-        form_data = request.dict(exclude={"student_name", "student_id", "program"})
-        
+        form_data = request.dict(
+            exclude={"student_name", "student_id", "program"})
+
         # Create the database record
         db_request = models.ConversationPartnerRequest(
             student_name=request.student_name,
@@ -438,44 +441,54 @@ def create_conversation_partner_request(request: schemas.ConversationPartnerRequ
             status="pending",
             form_data=form_data
         )
-        
+
         db.add(db_request)
         db.commit()
         db.refresh(db_request)
-        
+
         print(f"Conversation Partner request created with ID: {db_request.id}")
         return db_request
     except Exception as e:
         print(f"Error processing Conversation Partner request: {str(e)}")
         import traceback
         traceback.print_exc()
-        raise HTTPException(status_code=400, detail=f"Error processing Conversation Partner request: {str(e)}")
+        raise HTTPException(
+            status_code=400, detail=f"Error processing Conversation Partner request: {str(e)}")
+
 
 @router.get("/conversation-partner/", response_model=List[schemas.ConversationPartnerRequest])
 def get_conversation_partner_requests(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    requests = db.query(models.ConversationPartnerRequest).offset(skip).limit(limit).all()
+    requests = db.query(models.ConversationPartnerRequest).offset(
+        skip).limit(limit).all()
     print(f"Returning {len(requests)} Conversation Partner requests")
     return requests
 
+
 @router.get("/conversation-partner/{request_id}", response_model=schemas.ConversationPartnerRequest)
 def get_conversation_partner_request(request_id: int, db: Session = Depends(get_db)):
-    db_request = db.query(models.ConversationPartnerRequest).filter(models.ConversationPartnerRequest.id == request_id).first()
+    db_request = db.query(models.ConversationPartnerRequest).filter(
+        models.ConversationPartnerRequest.id == request_id).first()
     if db_request is None:
-        raise HTTPException(status_code=404, detail="Conversation Partner request not found")
+        raise HTTPException(
+            status_code=404, detail="Conversation Partner request not found")
     print(f"Returning Conversation Partner request with ID: {request_id}")
     return db_request
+
 
 @router.delete("/conversation-partner/{request_id}", status_code=204)
 def delete_conversation_partner_request(request_id: int, db: Session = Depends(get_db)):
     """Delete a specific Conversation Partner request"""
-    db_request = db.query(models.ConversationPartnerRequest).filter(models.ConversationPartnerRequest.id == request_id).first()
+    db_request = db.query(models.ConversationPartnerRequest).filter(
+        models.ConversationPartnerRequest.id == request_id).first()
     if db_request is None:
-        raise HTTPException(status_code=404, detail="Conversation Partner request not found")
-    
+        raise HTTPException(
+            status_code=404, detail="Conversation Partner request not found")
+
     db.delete(db_request)
     db.commit()
     print(f"Deleted Conversation Partner request ID: {request_id}")
     return {"message": "Conversation Partner request deleted successfully"}
+
 
 @router.delete("/conversation-partner/", status_code=204)
 def delete_all_conversation_partner_requests(db: Session = Depends(get_db)):
@@ -483,19 +496,22 @@ def delete_all_conversation_partner_requests(db: Session = Depends(get_db)):
     try:
         # Count how many records will be deleted
         count = db.query(models.ConversationPartnerRequest).count()
-        
+
         # Delete all records
         db.query(models.ConversationPartnerRequest).delete()
         db.commit()
-        
+
         print(f"Deleted {count} Conversation Partner requests")
         return {"message": f"Successfully deleted {count} Conversation Partner requests"}
     except Exception as e:
         db.rollback()
         print(f"Error deleting Conversation Partner requests: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error deleting Conversation Partner requests: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error deleting Conversation Partner requests: {str(e)}")
 
 # OPT Request endpoints
+
+
 @router.post("/opt-requests/", response_model=schemas.OPTRequest)
 async def create_opt_request(
     ucf_id: str = Form(...),
@@ -541,10 +557,10 @@ async def create_opt_request(
     """Create a new OPT Request with file uploads"""
     try:
         print("Creating OPT Request...")
-        
+
         # Create student name from given and family name
         student_name = f"{given_name} {family_name}".strip()
-        
+
         # Create form data dictionary
         form_data = {
             "ucf_id": ucf_id,
@@ -578,11 +594,11 @@ async def create_opt_request(
             "unemployment_limit": unemployment_limit,
             "employment_start_date": employment_start_date
         }
-        
+
         # Handle file uploads
         upload_dir = "uploads/opt_requests"
         os.makedirs(upload_dir, exist_ok=True)
-        
+
         file_fields = {
             "photo2x2": photo2x2,
             "passport_biographical": passport_biographical,
@@ -593,13 +609,13 @@ async def create_opt_request(
             "previous_i20s": previous_i20s,
             "previous_ead": previous_ead
         }
-        
+
         for field_name, file in file_fields.items():
             if file and file.filename:
                 file_path = await save_upload_file(file, upload_dir)
                 form_data[field_name] = file_path
                 print(f"Saved {field_name}: {file_path}")
-        
+
         # Create database record
         db_request = models.OPTRequest(
             student_name=student_name,
@@ -609,20 +625,22 @@ async def create_opt_request(
             status="pending",
             form_data=form_data
         )
-        
+
         db.add(db_request)
         db.commit()
         db.refresh(db_request)
-        
+
         print(f"Created OPT Request with ID: {db_request.id}")
         return db_request
-        
+
     except Exception as e:
         db.rollback()
         print(f"Error creating OPT Request: {str(e)}")
         import traceback
         traceback.print_exc()
-        raise HTTPException(status_code=400, detail=f"Error processing OPT Request: {str(e)}")
+        raise HTTPException(
+            status_code=400, detail=f"Error processing OPT Request: {str(e)}")
+
 
 @router.get("/opt-requests/", response_model=List[schemas.OPTRequest])
 def get_opt_requests(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
@@ -630,27 +648,31 @@ def get_opt_requests(skip: int = 0, limit: int = 100, db: Session = Depends(get_
     print(f"Returning {len(requests)} OPT requests")
     return requests
 
+
 @router.get("/opt-requests/{request_id}", response_model=schemas.OPTRequest)
 def get_opt_request(request_id: int, db: Session = Depends(get_db)):
-    db_request = db.query(models.OPTRequest).filter(models.OPTRequest.id == request_id).first()
+    db_request = db.query(models.OPTRequest).filter(
+        models.OPTRequest.id == request_id).first()
     if db_request is None:
         raise HTTPException(status_code=404, detail="OPT request not found")
     print(f"Returning OPT request with ID: {request_id}")
     return db_request
 
+
 @router.delete("/opt-requests/{request_id}", status_code=204)
 def delete_opt_request(request_id: int, db: Session = Depends(get_db)):
     """Delete a specific OPT request"""
-    db_request = db.query(models.OPTRequest).filter(models.OPTRequest.id == request_id).first()
+    db_request = db.query(models.OPTRequest).filter(
+        models.OPTRequest.id == request_id).first()
     if db_request is None:
         raise HTTPException(status_code=404, detail="OPT request not found")
-    
+
     # Delete associated files
     if db_request.form_data:
         upload_dir = "uploads/opt_requests"
-        file_fields = ["photo2x2", "passport_biographical", "f1_visa_or_uscis_notice", "i94", 
-                      "form_i765", "form_g1145", "previous_i20s", "previous_ead"]
-        
+        file_fields = ["photo2x2", "passport_biographical", "f1_visa_or_uscis_notice", "i94",
+                       "form_i765", "form_g1145", "previous_i20s", "previous_ead"]
+
         for field in file_fields:
             file_path = db_request.form_data.get(field)
             if file_path and os.path.exists(file_path):
@@ -659,11 +681,12 @@ def delete_opt_request(request_id: int, db: Session = Depends(get_db)):
                     print(f"Deleted file: {file_path}")
                 except Exception as e:
                     print(f"Error deleting file {file_path}: {str(e)}")
-    
+
     db.delete(db_request)
     db.commit()
     print(f"Deleted OPT request ID: {request_id}")
     return {"message": "OPT request deleted successfully"}
+
 
 @router.delete("/opt-requests/", status_code=204)
 def delete_all_opt_requests(db: Session = Depends(get_db)):
@@ -671,49 +694,51 @@ def delete_all_opt_requests(db: Session = Depends(get_db)):
     try:
         # Count how many records will be deleted
         count = db.query(models.OPTRequest).count()
-        
+
         # Delete all records
         db.query(models.OPTRequest).delete()
         db.commit()
-        
+
         print(f"Deleted {count} OPT requests")
         return {"message": f"Successfully deleted {count} OPT requests"}
     except Exception as e:
         db.rollback()
         print(f"Error deleting OPT requests: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error deleting OPT requests: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error deleting OPT requests: {str(e)}")
 
 # Document Request endpoints
+
+
 @router.post("/document-requests/", response_model=schemas.DocumentRequest)
 def create_document_request(request: schemas.DocumentRequestCreate, db: Session = Depends(get_db)):
     """Create a new Document Request"""
     try:
         print(f"Received Document Request: {request}")
-        
+
         # Convert the request model to a dict for JSON storage
-        form_data = request.dict(exclude={"student_name", "student_id", "program"})
-        
+        form_data = request.model_dump(
+            exclude={"student_name", "student_id", "program"})
+
         # Create the database record
-        db_request = models.DocumentRequest(
-            student_name=request.student_name,
-            student_id=request.student_id,
-            program=request.program,
-            submission_date=datetime.now(),
-            status="pending",
-            form_data=form_data
+        db_request = create_db_record(
+            models.DocumentRequest,
+            request.student_id,
+            request.given_name,  # needs schema update first
+            request.family_name,
+            request.program or "Document Request",
+            form_data
         )
-        
-        db.add(db_request)
-        db.commit()
-        db.refresh(db_request)
-        
-        print(f"Document Request created with ID: {db_request.id}")
-        return db_request
+
+        return commit_to_db(db, db_request)
     except Exception as e:
+        db.rollback()
         print(f"Error processing Document Request: {str(e)}")
         import traceback
         traceback.print_exc()
-        raise HTTPException(status_code=400, detail=f"Error processing Document Request: {str(e)}")
+        raise HTTPException(
+            status_code=400, detail=f"Error processing Document Request: {str(e)}")
+
 
 @router.get("/document-requests/", response_model=List[schemas.DocumentRequest])
 def get_document_requests(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
@@ -721,25 +746,32 @@ def get_document_requests(skip: int = 0, limit: int = 100, db: Session = Depends
     print(f"Returning {len(requests)} Document requests")
     return requests
 
+
 @router.get("/document-requests/{request_id}", response_model=schemas.DocumentRequest)
 def get_document_request(request_id: int, db: Session = Depends(get_db)):
-    db_request = db.query(models.DocumentRequest).filter(models.DocumentRequest.id == request_id).first()
+    db_request = db.query(models.DocumentRequest).filter(
+        models.DocumentRequest.id == request_id).first()
     if db_request is None:
-        raise HTTPException(status_code=404, detail="Document request not found")
+        raise HTTPException(
+            status_code=404, detail="Document request not found")
     print(f"Returning Document request with ID: {request_id}")
     return db_request
+
 
 @router.delete("/document-requests/{request_id}", status_code=204)
 def delete_document_request(request_id: int, db: Session = Depends(get_db)):
     """Delete a specific Document request"""
-    db_request = db.query(models.DocumentRequest).filter(models.DocumentRequest.id == request_id).first()
+    db_request = db.query(models.DocumentRequest).filter(
+        models.DocumentRequest.id == request_id).first()
     if db_request is None:
-        raise HTTPException(status_code=404, detail="Document request not found")
-    
+        raise HTTPException(
+            status_code=404, detail="Document request not found")
+
     db.delete(db_request)
     db.commit()
     print(f"Deleted Document request ID: {request_id}")
     return {"message": "Document request deleted successfully"}
+
 
 @router.delete("/document-requests/", status_code=204)
 def delete_all_document_requests(db: Session = Depends(get_db)):
@@ -747,27 +779,31 @@ def delete_all_document_requests(db: Session = Depends(get_db)):
     try:
         # Count how many records will be deleted
         count = db.query(models.DocumentRequest).count()
-        
+
         # Delete all records
         db.query(models.DocumentRequest).delete()
         db.commit()
-        
+
         print(f"Deleted {count} Document requests")
         return {"message": f"Successfully deleted {count} Document requests"}
     except Exception as e:
         db.rollback()
         print(f"Error deleting Document requests: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error deleting Document requests: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error deleting Document requests: {str(e)}")
 
 # English Language Volunteer Request endpoints
+
+
 @router.post("/english-language-volunteer/", response_model=schemas.EnglishLanguageVolunteerRequest)
 def create_english_language_volunteer_request(request: schemas.EnglishLanguageVolunteerRequestCreate, db: Session = Depends(get_db)):
     try:
         print(f"Received English Language Volunteer request: {request}")
-        
+
         # Convert the request model to a dict for JSON storage
-        form_data = request.dict(exclude={"student_name", "student_id", "program"})
-        
+        form_data = request.dict(
+            exclude={"student_name", "student_id", "program"})
+
         # Create the database record
         db_request = models.EnglishLanguageVolunteerRequest(
             student_name=request.student_name,
@@ -777,17 +813,20 @@ def create_english_language_volunteer_request(request: schemas.EnglishLanguageVo
             status="pending",
             form_data=form_data
         )
-        
+
         db.add(db_request)
         db.commit()
         db.refresh(db_request)
-        
-        print(f"Created English Language Volunteer request with ID: {db_request.id}")
+
+        print(
+            f"Created English Language Volunteer request with ID: {db_request.id}")
         return db_request
     except Exception as e:
         db.rollback()
         print(f"Error creating English Language Volunteer request: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error creating request: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error creating request: {str(e)}")
+
 
 @router.get("/english-language-volunteer/", response_model=List[schemas.EnglishLanguageVolunteerRequest])
 def get_english_language_volunteer_requests(db: Session = Depends(get_db)):
@@ -796,13 +835,17 @@ def get_english_language_volunteer_requests(db: Session = Depends(get_db)):
         print(f"Retrieved {len(requests)} English Language Volunteer requests")
         return requests
     except Exception as e:
-        print(f"Error retrieving English Language Volunteer requests: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error retrieving requests: {str(e)}")
+        print(
+            f"Error retrieving English Language Volunteer requests: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error retrieving requests: {str(e)}")
+
 
 @router.get("/english-language-volunteer/{request_id}", response_model=schemas.EnglishLanguageVolunteerRequest)
 def get_english_language_volunteer_request(request_id: int, db: Session = Depends(get_db)):
     try:
-        request = db.query(models.EnglishLanguageVolunteerRequest).filter(models.EnglishLanguageVolunteerRequest.id == request_id).first()
+        request = db.query(models.EnglishLanguageVolunteerRequest).filter(
+            models.EnglishLanguageVolunteerRequest.id == request_id).first()
         if request is None:
             raise HTTPException(status_code=404, detail="Request not found")
         return request
@@ -810,18 +853,21 @@ def get_english_language_volunteer_request(request_id: int, db: Session = Depend
         raise
     except Exception as e:
         print(f"Error retrieving English Language Volunteer request: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error retrieving request: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error retrieving request: {str(e)}")
+
 
 @router.delete("/english-language-volunteer/{request_id}")
 def delete_english_language_volunteer_request(request_id: int, db: Session = Depends(get_db)):
     try:
-        request = db.query(models.EnglishLanguageVolunteerRequest).filter(models.EnglishLanguageVolunteerRequest.id == request_id).first()
+        request = db.query(models.EnglishLanguageVolunteerRequest).filter(
+            models.EnglishLanguageVolunteerRequest.id == request_id).first()
         if request is None:
             raise HTTPException(status_code=404, detail="Request not found")
-        
+
         db.delete(request)
         db.commit()
-        
+
         print(f"Deleted English Language Volunteer request {request_id}")
         return {"message": "Request deleted successfully"}
     except HTTPException:
@@ -829,33 +875,39 @@ def delete_english_language_volunteer_request(request_id: int, db: Session = Dep
     except Exception as e:
         db.rollback()
         print(f"Error deleting English Language Volunteer request: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error deleting request: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error deleting request: {str(e)}")
+
 
 @router.delete("/english-language-volunteer/")
 def delete_all_english_language_volunteer_requests(db: Session = Depends(get_db)):
     try:
         count = db.query(models.EnglishLanguageVolunteerRequest).count()
-        
+
         # Delete all records
         db.query(models.EnglishLanguageVolunteerRequest).delete()
         db.commit()
-        
+
         print(f"Deleted {count} English Language Volunteer requests")
         return {"message": f"Successfully deleted {count} English Language Volunteer requests"}
     except Exception as e:
         db.rollback()
         print(f"Error deleting English Language Volunteer requests: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error deleting English Language Volunteer requests: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error deleting English Language Volunteer requests: {str(e)}")
 
 # Off Campus Housing Request endpoints
+
+
 @router.post("/off-campus-housing/", response_model=schemas.OffCampusHousingRequest)
 def create_off_campus_housing_request(request: schemas.OffCampusHousingRequestCreate, db: Session = Depends(get_db)):
     try:
         print(f"Received Off Campus Housing request: {request}")
-        
+
         # Convert the request model to a dict for JSON storage
-        form_data = request.dict(exclude={"student_name", "student_id", "program"})
-        
+        form_data = request.dict(
+            exclude={"student_name", "student_id", "program"})
+
         # Create the database record
         db_request = models.OffCampusHousingRequest(
             student_name=request.student_name,
@@ -865,17 +917,19 @@ def create_off_campus_housing_request(request: schemas.OffCampusHousingRequestCr
             status="pending",
             form_data=form_data
         )
-        
+
         db.add(db_request)
         db.commit()
         db.refresh(db_request)
-        
+
         print(f"Created Off Campus Housing request with ID: {db_request.id}")
         return db_request
     except Exception as e:
         db.rollback()
         print(f"Error creating Off Campus Housing request: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error creating request: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error creating request: {str(e)}")
+
 
 @router.get("/off-campus-housing/", response_model=List[schemas.OffCampusHousingRequest])
 def get_off_campus_housing_requests(db: Session = Depends(get_db)):
@@ -885,12 +939,15 @@ def get_off_campus_housing_requests(db: Session = Depends(get_db)):
         return requests
     except Exception as e:
         print(f"Error retrieving Off Campus Housing requests: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error retrieving requests: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error retrieving requests: {str(e)}")
+
 
 @router.get("/off-campus-housing/{request_id}", response_model=schemas.OffCampusHousingRequest)
 def get_off_campus_housing_request(request_id: int, db: Session = Depends(get_db)):
     try:
-        request = db.query(models.OffCampusHousingRequest).filter(models.OffCampusHousingRequest.id == request_id).first()
+        request = db.query(models.OffCampusHousingRequest).filter(
+            models.OffCampusHousingRequest.id == request_id).first()
         if request is None:
             raise HTTPException(status_code=404, detail="Request not found")
         return request
@@ -898,18 +955,21 @@ def get_off_campus_housing_request(request_id: int, db: Session = Depends(get_db
         raise
     except Exception as e:
         print(f"Error retrieving Off Campus Housing request: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error retrieving request: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error retrieving request: {str(e)}")
+
 
 @router.delete("/off-campus-housing/{request_id}")
 def delete_off_campus_housing_request(request_id: int, db: Session = Depends(get_db)):
     try:
-        request = db.query(models.OffCampusHousingRequest).filter(models.OffCampusHousingRequest.id == request_id).first()
+        request = db.query(models.OffCampusHousingRequest).filter(
+            models.OffCampusHousingRequest.id == request_id).first()
         if request is None:
             raise HTTPException(status_code=404, detail="Request not found")
-        
+
         db.delete(request)
         db.commit()
-        
+
         print(f"Deleted Off Campus Housing request {request_id}")
         return {"message": "Request deleted successfully"}
     except HTTPException:
@@ -917,33 +977,38 @@ def delete_off_campus_housing_request(request_id: int, db: Session = Depends(get
     except Exception as e:
         db.rollback()
         print(f"Error deleting Off Campus Housing request: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error deleting request: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error deleting request: {str(e)}")
+
 
 @router.delete("/off-campus-housing/")
 def delete_all_off_campus_housing_requests(db: Session = Depends(get_db)):
     try:
         count = db.query(models.OffCampusHousingRequest).count()
-        
+
         # Delete all records
         db.query(models.OffCampusHousingRequest).delete()
         db.commit()
-        
+
         print(f"Deleted {count} Off Campus Housing requests")
         return {"message": f"Successfully deleted {count} Off Campus Housing requests"}
     except Exception as e:
         db.rollback()
         print(f"Error deleting Off Campus Housing requests: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error deleting Off Campus Housing requests: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error deleting Off Campus Housing requests: {str(e)}")
 
 # Florida Statute 1010.35 Routes
+
+
 @router.post("/florida-statute-101035/", response_model=schemas.FloridaStatute101035Request)
 async def create_florida_statute_101035_request(
     ucf_id: str = Form(...),
-    first_name: str = Form(...),
-    last_name: str = Form(...),
+    given_name: str = Form(...),
+    family_name: str = Form(...),
     date_of_birth: str = Form(...),
     telephone_number: str = Form(...),
-    email_address: str = Form(...),
+    email: str = Form(...),
     sevis_number: str = Form(None),
     college: str = Form(...),
     department: str = Form(...),
@@ -954,53 +1019,46 @@ async def create_florida_statute_101035_request(
     db: Session = Depends(get_db)
 ):
     try:
-        # Handle file upload if provided
-        passport_document_path = None
-        if passport_document and passport_document.filename:
-            passport_document_path = await save_upload_file(passport_document, "uploads/florida_statute_101035")
-        
-        # Create student name and ID
-        student_name = f"{first_name} {last_name}"
-        student_id = ucf_id
-        
-        # Prepare form data
-        form_data = {
-            "ucf_id": ucf_id,
-            "first_name": first_name,
-            "last_name": last_name,
-            "date_of_birth": date_of_birth,
-            "telephone_number": telephone_number,
-            "email_address": email_address,
-            "sevis_number": sevis_number,
-            "college": college,
-            "department": department,
-            "position": position,
-            "has_passport": has_passport,
-            "has_ds160": has_ds160,
-            "passport_document_path": passport_document_path
-        }
-        
-        # Create database record
-        db_request = models.FloridaStatute101035Request(
-            student_name=student_name,
-            student_id=student_id,
-            program="Florida Statute 1010.35",
-            submission_date=datetime.now(),
-            status="pending",
-            form_data=form_data
+        # Save file with UCF ID subfolder
+        passport_path = await save_upload_file(
+            passport_document,
+            UPLOAD_PATHS["florida_statute"],
+            ucf_id
         )
-        
-        db.add(db_request)
-        db.commit()
-        db.refresh(db_request)
-        
-        print(f"Created Florida Statute 1010.35 request for {student_name} (ID: {db_request.id})")
-        return db_request
-        
+
+        # Prepare form data
+        form_data = create_form_data_dict(
+            ucf_id=ucf_id,
+            given_name=given_name,
+            family_name=family_name,
+            date_of_birth=date_of_birth,
+            telephone_number=telephone_number,
+            email=email,
+            sevis_number=sevis_number,
+            college=college,
+            department=department,
+            position=position,
+            has_passport=has_passport,
+            has_ds160=has_ds160,
+            passport_document_path=passport_path
+        )
+
+        # Create and commit DB record
+        db_request = create_db_record(
+            models.FloridaStatute101035Request,
+            ucf_id, given_name, family_name,
+            "Florida Statute 1010.35",
+            form_data
+        )
+
+        return commit_to_db(db, db_request)
+
     except Exception as e:
         db.rollback()
         print(f"Error creating Florida Statute 1010.35 request: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error creating request: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error creating request: {str(e)}")
+
 
 @router.get("/florida-statute-101035/", response_model=List[schemas.FloridaStatute101035Request])
 def get_florida_statute_101035_requests(db: Session = Depends(get_db)):
@@ -1010,30 +1068,36 @@ def get_florida_statute_101035_requests(db: Session = Depends(get_db)):
         return requests
     except Exception as e:
         print(f"Error retrieving Florida Statute 1010.35 requests: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error retrieving requests: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error retrieving requests: {str(e)}")
+
 
 @router.get("/florida-statute-101035/{request_id}", response_model=schemas.FloridaStatute101035Request)
 def get_florida_statute_101035_request(request_id: int, db: Session = Depends(get_db)):
     try:
-        request = db.query(models.FloridaStatute101035Request).filter(models.FloridaStatute101035Request.id == request_id).first()
+        request = db.query(models.FloridaStatute101035Request).filter(
+            models.FloridaStatute101035Request.id == request_id).first()
         if request is None:
             raise HTTPException(status_code=404, detail="Request not found")
-        
+
         print(f"Retrieved Florida Statute 1010.35 request {request_id}")
         return request
     except HTTPException:
         raise
     except Exception as e:
         print(f"Error retrieving Florida Statute 1010.35 request: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error retrieving request: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error retrieving request: {str(e)}")
+
 
 @router.delete("/florida-statute-101035/{request_id}")
 def delete_florida_statute_101035_request(request_id: int, db: Session = Depends(get_db)):
     try:
-        request = db.query(models.FloridaStatute101035Request).filter(models.FloridaStatute101035Request.id == request_id).first()
+        request = db.query(models.FloridaStatute101035Request).filter(
+            models.FloridaStatute101035Request.id == request_id).first()
         if request is None:
             raise HTTPException(status_code=404, detail="Request not found")
-        
+
         # Clean up uploaded files if they exist
         if request.form_data and request.form_data.get("passport_document_path"):
             passport_path = request.form_data["passport_document_path"]
@@ -1043,10 +1107,10 @@ def delete_florida_statute_101035_request(request_id: int, db: Session = Depends
                     print(f"Deleted file: {passport_path}")
                 except Exception as e:
                     print(f"Error deleting file {passport_path}: {str(e)}")
-        
+
         db.delete(request)
         db.commit()
-        
+
         print(f"Deleted Florida Statute 1010.35 request {request_id}")
         return {"message": "Request deleted successfully"}
     except HTTPException:
@@ -1054,14 +1118,16 @@ def delete_florida_statute_101035_request(request_id: int, db: Session = Depends
     except Exception as e:
         db.rollback()
         print(f"Error deleting Florida Statute 1010.35 request: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error deleting request: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error deleting request: {str(e)}")
+
 
 @router.delete("/florida-statute-101035/")
 def delete_all_florida_statute_101035_requests(db: Session = Depends(get_db)):
     try:
         requests = db.query(models.FloridaStatute101035Request).all()
         count = len(requests)
-        
+
         # Clean up uploaded files
         for request in requests:
             if request.form_data and request.form_data.get("passport_document_path"):
@@ -1072,24 +1138,27 @@ def delete_all_florida_statute_101035_requests(db: Session = Depends(get_db)):
                         print(f"Deleted file: {passport_path}")
                     except Exception as e:
                         print(f"Error deleting file {passport_path}: {str(e)}")
-        
+
         # Delete all records
         db.query(models.FloridaStatute101035Request).delete()
         db.commit()
-        
+
         print(f"Deleted {count} Florida Statute 1010.35 requests")
         return {"message": f"Successfully deleted {count} Florida Statute 1010.35 requests"}
     except Exception as e:
         db.rollback()
         print(f"Error deleting Florida Statute 1010.35 requests: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error deleting Florida Statute 1010.35 requests: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error deleting Florida Statute 1010.35 requests: {str(e)}")
 
 # Leave Request Routes
+
+
 @router.post("/leave-requests/", response_model=schemas.LeaveRequest)
 async def create_leave_request(
     employee_id: str = Form(...),
-    first_name: str = Form(...),
-    last_name: str = Form(...),
+    given_name: str = Form(...),
+    family_name: str = Form(...),
     leave_type: str = Form(...),
     from_date: str = Form(...),
     from_time: str = Form(...),
@@ -1102,52 +1171,43 @@ async def create_leave_request(
     db: Session = Depends(get_db)
 ):
     try:
-        # Handle file upload if provided
-        documentation_path = None
-        if documentation and documentation.filename:
-            documentation_path = await save_upload_file(documentation, "uploads/leave_requests")
-        
-        # Create student name and ID
-        student_name = f"{first_name} {last_name}"
-        student_id = employee_id
-        
-        # Prepare form data
-        form_data = {
-            "employee_id": employee_id,
-            "first_name": first_name,
-            "last_name": last_name,
-            "leave_type": leave_type,
-            "from_date": from_date,
-            "from_time": from_time,
-            "to_date": to_date,
-            "to_time": to_time,
-            "hours_requested": hours_requested,
-            "reason": reason,
-            "course_name": course_name,
-            "documentation_path": documentation_path
-        }
-        
-        # Create database record
-        db_request = models.LeaveRequest(
-            student_name=student_name,
-            student_id=student_id,
-            program="Leave Request",
-            submission_date=datetime.now(),
-            status="pending",
-            form_data=form_data
+        # Save file with UCF ID (using employee_id)
+        documentation_path = await save_upload_file(
+            documentation,
+            UPLOAD_PATHS["leave_requests"],
+            employee_id  # Add this param
         )
-        
-        db.add(db_request)
-        db.commit()
-        db.refresh(db_request)
-        
-        print(f"Created Leave Request for {student_name} (ID: {db_request.id})")
-        return db_request
-        
+
+        # Create form data
+        form_data = create_form_data_dict(
+            ucf_id=employee_id,
+            given_name=given_name,
+            family_name=family_name,
+            leave_type=leave_type,
+            from_date=from_date,
+            from_time=from_time,
+            to_date=to_date,
+            to_time=to_time,
+            hours_requested=hours_requested,
+            reason=reason,
+            course_name=course_name,
+            documentation_path=documentation_path
+        )
+
+        # Create and commit
+        db_request = create_db_record(
+            models.LeaveRequest,
+            employee_id, given_name, family_name,
+            "Leave Request",
+            form_data
+        )
+
+        return commit_to_db(db, db_request)
+
     except Exception as e:
         db.rollback()
-        print(f"Error creating Leave Request: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error creating request: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.get("/leave-requests/", response_model=List[schemas.LeaveRequest])
 def get_leave_requests(db: Session = Depends(get_db)):
@@ -1157,30 +1217,36 @@ def get_leave_requests(db: Session = Depends(get_db)):
         return requests
     except Exception as e:
         print(f"Error retrieving Leave requests: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error retrieving requests: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error retrieving requests: {str(e)}")
+
 
 @router.get("/leave-requests/{request_id}", response_model=schemas.LeaveRequest)
 def get_leave_request(request_id: int, db: Session = Depends(get_db)):
     try:
-        request = db.query(models.LeaveRequest).filter(models.LeaveRequest.id == request_id).first()
+        request = db.query(models.LeaveRequest).filter(
+            models.LeaveRequest.id == request_id).first()
         if request is None:
             raise HTTPException(status_code=404, detail="Request not found")
-        
+
         print(f"Retrieved Leave request {request_id}")
         return request
     except HTTPException:
         raise
     except Exception as e:
         print(f"Error retrieving Leave request: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error retrieving request: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error retrieving request: {str(e)}")
+
 
 @router.delete("/leave-requests/{request_id}")
 def delete_leave_request(request_id: int, db: Session = Depends(get_db)):
     try:
-        request = db.query(models.LeaveRequest).filter(models.LeaveRequest.id == request_id).first()
+        request = db.query(models.LeaveRequest).filter(
+            models.LeaveRequest.id == request_id).first()
         if request is None:
             raise HTTPException(status_code=404, detail="Request not found")
-        
+
         # Clean up uploaded files if they exist
         if request.form_data and request.form_data.get("documentation_path"):
             documentation_path = request.form_data["documentation_path"]
@@ -1189,11 +1255,12 @@ def delete_leave_request(request_id: int, db: Session = Depends(get_db)):
                     os.remove(documentation_path)
                     print(f"Deleted file: {documentation_path}")
                 except Exception as e:
-                    print(f"Error deleting file {documentation_path}: {str(e)}")
-        
+                    print(
+                        f"Error deleting file {documentation_path}: {str(e)}")
+
         db.delete(request)
         db.commit()
-        
+
         print(f"Deleted Leave request {request_id}")
         return {"message": "Request deleted successfully"}
     except HTTPException:
@@ -1201,14 +1268,16 @@ def delete_leave_request(request_id: int, db: Session = Depends(get_db)):
     except Exception as e:
         db.rollback()
         print(f"Error deleting Leave request: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error deleting request: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error deleting request: {str(e)}")
+
 
 @router.delete("/leave-requests/")
 def delete_all_leave_requests(db: Session = Depends(get_db)):
     try:
         requests = db.query(models.LeaveRequest).all()
         count = len(requests)
-        
+
         # Clean up uploaded files
         for request in requests:
             if request.form_data and request.form_data.get("documentation_path"):
@@ -1218,28 +1287,33 @@ def delete_all_leave_requests(db: Session = Depends(get_db)):
                         os.remove(documentation_path)
                         print(f"Deleted file: {documentation_path}")
                     except Exception as e:
-                        print(f"Error deleting file {documentation_path}: {str(e)}")
-        
+                        print(
+                            f"Error deleting file {documentation_path}: {str(e)}")
+
         # Delete all records
         db.query(models.LeaveRequest).delete()
         db.commit()
-        
+
         print(f"Deleted {count} Leave requests")
         return {"message": f"Successfully deleted {count} Leave requests"}
     except Exception as e:
         db.rollback()
         print(f"Error deleting Leave requests: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error deleting Leave requests: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error deleting Leave requests: {str(e)}")
 
 # OPT STEM Extension Reporting Routes
+
+
 @router.post("/opt-stem-reports/", response_model=schemas.OptStemExtensionReport)
 def create_opt_stem_report(request: schemas.OptStemExtensionReportCreate, db: Session = Depends(get_db)):
     try:
         print(f"Received OPT STEM Extension Report: {request}")
-        
+
         # Convert the request model to a dict for JSON storage
-        form_data = request.dict(exclude={"student_name", "student_id", "program"})
-        
+        form_data = request.dict(
+            exclude={"student_name", "student_id", "program"})
+
         # Create the database record
         db_request = models.OptStemExtensionReport(
             student_name=request.student_name,
@@ -1249,44 +1323,54 @@ def create_opt_stem_report(request: schemas.OptStemExtensionReportCreate, db: Se
             status="pending",
             form_data=form_data
         )
-        
+
         db.add(db_request)
         db.commit()
         db.refresh(db_request)
-        
+
         print(f"Created OPT STEM Extension Report with ID: {db_request.id}")
         return db_request
     except Exception as e:
         print(f"Error processing OPT STEM Extension Report: {str(e)}")
         import traceback
         traceback.print_exc()
-        raise HTTPException(status_code=400, detail=f"Error processing report: {str(e)}")
+        raise HTTPException(
+            status_code=400, detail=f"Error processing report: {str(e)}")
+
 
 @router.get("/opt-stem-reports/", response_model=List[schemas.OptStemExtensionReport])
 def get_opt_stem_reports(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    requests = db.query(models.OptStemExtensionReport).offset(skip).limit(limit).all()
+    requests = db.query(models.OptStemExtensionReport).offset(
+        skip).limit(limit).all()
     print(f"Returning {len(requests)} OPT STEM Extension reports")
     return requests
 
+
 @router.get("/opt-stem-reports/{request_id}", response_model=schemas.OptStemExtensionReport)
 def get_opt_stem_report(request_id: int, db: Session = Depends(get_db)):
-    db_request = db.query(models.OptStemExtensionReport).filter(models.OptStemExtensionReport.id == request_id).first()
+    db_request = db.query(models.OptStemExtensionReport).filter(
+        models.OptStemExtensionReport.id == request_id).first()
     if db_request is None:
-        raise HTTPException(status_code=404, detail="OPT STEM Extension report not found")
+        raise HTTPException(
+            status_code=404, detail="OPT STEM Extension report not found")
     print(f"Returning OPT STEM Extension report with ID: {request_id}")
     return db_request
+
 
 @router.delete("/opt-stem-reports/{request_id}", status_code=204)
 def delete_opt_stem_report(request_id: int, db: Session = Depends(get_db)):
     """Delete a specific OPT STEM Extension report"""
-    db_request = db.query(models.OptStemExtensionReport).filter(models.OptStemExtensionReport.id == request_id).first()
+    db_request = db.query(models.OptStemExtensionReport).filter(
+        models.OptStemExtensionReport.id == request_id).first()
     if db_request is None:
-        raise HTTPException(status_code=404, detail="OPT STEM Extension report not found")
-    
+        raise HTTPException(
+            status_code=404, detail="OPT STEM Extension report not found")
+
     db.delete(db_request)
     db.commit()
     print(f"Deleted OPT STEM Extension report ID: {request_id}")
     return {"message": "OPT STEM Extension report deleted successfully"}
+
 
 @router.delete("/opt-stem-reports/", status_code=204)
 def delete_all_opt_stem_reports(db: Session = Depends(get_db)):
@@ -1294,19 +1378,22 @@ def delete_all_opt_stem_reports(db: Session = Depends(get_db)):
     try:
         # Count how many records will be deleted
         count = db.query(models.OptStemExtensionReport).count()
-        
+
         # Delete all records
         db.query(models.OptStemExtensionReport).delete()
         db.commit()
-        
+
         print(f"Deleted {count} OPT STEM Extension reports")
         return {"message": f"Successfully deleted {count} OPT STEM Extension reports"}
     except Exception as e:
         db.rollback()
         print(f"Error deleting OPT STEM Extension reports: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error deleting OPT STEM Extension reports: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error deleting OPT STEM Extension reports: {str(e)}")
 
 # OPT STEM Extension Application Routes
+
+
 @router.post("/opt-stem-applications/", response_model=schemas.OptStemExtensionApplication)
 async def create_opt_stem_application(
     ucf_id: str = Form(...),
@@ -1332,8 +1419,8 @@ async def create_opt_stem_application(
     employment_city: str = Form(None),
     employment_state: str = Form(None),
     employment_postal_code: str = Form(None),
-    supervisor_first_name: str = Form(None),
-    supervisor_last_name: str = Form(None),
+    supervisor_given_name: str = Form(None),
+    supervisor_family_name: str = Form(None),
     supervisor_email: str = Form(None),
     supervisor_telephone: str = Form(None),
     hours_per_week: str = Form(None),
@@ -1364,106 +1451,88 @@ async def create_opt_stem_application(
     db: Session = Depends(get_db)
 ):
     try:
-        # Handle file uploads (all optional)
-        file_fields = {
-            'photo_2x2': photo_2x2,
-            'form_i983': form_i983,
-            'passport': passport,
-            'f1_visa': f1_visa,
-            'i94': i94,
-            'ead_card': ead_card,
-            'form_i765': form_i765,
-            'form_g1145': form_g1145,
-            'diploma': diploma,
-            'transcripts': transcripts,
-            'previous_i20s': previous_i20s
-        }
-        
-        upload_dir = "uploads/opt_stem_applications"
-        form_data = {}
-        
-        # Save uploaded files
-        for field_name, file in file_fields.items():
-            if file and file.filename:
-                file_path = await save_upload_file(file, upload_dir)
-                form_data[field_name + '_path'] = file_path
-                print(f"Saved {field_name}: {file_path}")
-        
-        # Convert string booleans to actual booleans
-        def str_to_bool(value):
-            if value is None:
-                return None
-            return value.lower() in ['true', 'yes', '1', 'on']
-        
-        # Create student name and ID
-        student_name = f"{given_name} {family_name}"
-        student_id = ucf_id
-        
-        # Prepare form data
-        form_data.update({
-            "ucf_id": ucf_id,
-            "given_name": given_name,
-            "family_name": family_name,
-            "date_of_birth": date_of_birth,
-            "gender": gender,
-            "country_of_citizenship": country_of_citizenship,
-            "academic_level": academic_level,
-            "academic_program": academic_program,
-            "address": address,
-            "address_2": address_2,
-            "city": city,
-            "state": state,
-            "postal_code": postal_code,
-            "ucf_email_address": ucf_email_address,
-            "secondary_email_address": secondary_email_address,
-            "telephone_number": telephone_number,
-            "job_title": job_title,
-            "employer_name": employer_name,
-            "employer_ein": employer_ein,
-            "employment_street_address": employment_street_address,
-            "employment_city": employment_city,
-            "employment_state": employment_state,
-            "employment_postal_code": employment_postal_code,
-            "supervisor_first_name": supervisor_first_name,
-            "supervisor_last_name": supervisor_last_name,
-            "supervisor_email": supervisor_email,
-            "supervisor_telephone": supervisor_telephone,
-            "hours_per_week": hours_per_week,
-            "is_paid_position": str_to_bool(is_paid_position),
-            "is_staffing_firm": str_to_bool(is_staffing_firm),
-            "has_e_verify": str_to_bool(has_e_verify),
-            "based_on_previous_stem_degree": str_to_bool(based_on_previous_stem_degree),
-            "completed_stem_workshop": str_to_bool(completed_stem_workshop),
-            "provide_ead_copy": str_to_bool(provide_ead_copy),
-            "understand_unemployment_limits": str_to_bool(understand_unemployment_limits),
-            "notify_changes": str_to_bool(notify_changes),
-            "submit_updated_i983": str_to_bool(submit_updated_i983),
-            "comply_reporting_requirements": str_to_bool(comply_reporting_requirements),
-            "reviewed_photo_requirements": str_to_bool(reviewed_photo_requirements),
-            "reviewed_fee_payment": str_to_bool(reviewed_fee_payment)
-        })
-        
-        # Create database record
-        db_request = models.OptStemExtensionApplication(
-            student_name=student_name,
-            student_id=student_id,
-            program="OPT STEM Extension Application",
-            submission_date=datetime.now(),
-            status="pending",
-            form_data=form_data
+        # Save all files
+        file_paths = await save_multiple_files(
+            files_dict={
+                'photo_2x2': photo_2x2,
+                'form_i983': form_i983,
+                'passport': passport,
+                'f1_visa': f1_visa,
+                'i94': i94,
+                'ead_card': ead_card,
+                'form_i765': form_i765,
+                'form_g1145': form_g1145,
+                'diploma': diploma,
+                'transcripts': transcripts,
+                'previous_i20s': previous_i20s
+            },
+            destination_dir=UPLOAD_PATHS["opt_stem_applications"],
+            ucf_id=ucf_id
         )
-        
-        db.add(db_request)
-        db.commit()
-        db.refresh(db_request)
-        
-        print(f"Created OPT STEM Extension Application for {student_name} (ID: {db_request.id})")
-        return db_request
-        
+
+        # Convert booleans
+        bool_fields = convert_multiple_bools({
+            "is_paid_position": is_paid_position,
+            "is_staffing_firm": is_staffing_firm,
+            "has_e_verify": has_e_verify,
+            "based_on_previous_stem_degree": based_on_previous_stem_degree,
+            "completed_stem_workshop": completed_stem_workshop,
+            "provide_ead_copy": provide_ead_copy,
+            "understand_unemployment_limits": understand_unemployment_limits,
+            "notify_changes": notify_changes,
+            "submit_updated_i983": submit_updated_i983,
+            "comply_reporting_requirements": comply_reporting_requirements,
+            "reviewed_photo_requirements": reviewed_photo_requirements,
+            "reviewed_fee_payment": reviewed_fee_payment
+        })
+
+        # Create form data
+        form_data = create_form_data_dict(
+            ucf_id=ucf_id,
+            given_name=given_name,
+            family_name=family_name,
+            email=ucf_email_address,
+            date_of_birth=date_of_birth,
+            gender=gender,
+            country_of_citizenship=country_of_citizenship,
+            academic_level=academic_level,
+            academic_program=academic_program,
+            address=address,
+            address_2=address_2,
+            city=city,
+            state=state,
+            postal_code=postal_code,
+            secondary_email_address=secondary_email_address,
+            telephone_number=telephone_number,
+            job_title=job_title,
+            employer_name=employer_name,
+            employer_ein=employer_ein,
+            employment_street_address=employment_street_address,
+            employment_city=employment_city,
+            employment_state=employment_state,
+            employment_postal_code=employment_postal_code,
+            supervisor_given_name=supervisor_given_name,
+            supervisor_family_name=supervisor_family_name,
+            supervisor_email=supervisor_email,
+            supervisor_telephone=supervisor_telephone,
+            hours_per_week=hours_per_week,
+            **file_paths,
+            **bool_fields
+        )
+
+        db_request = create_db_record(
+            models.OptStemExtensionApplication,
+            ucf_id, given_name, family_name,
+            "OPT STEM Extension Application",
+            form_data
+        )
+
+        return commit_to_db(db, db_request)
+
     except Exception as e:
         db.rollback()
-        print(f"Error creating OPT STEM Extension Application: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error creating application: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.get("/opt-stem-applications/", response_model=List[schemas.OptStemExtensionApplication])
 def get_opt_stem_applications(db: Session = Depends(get_db)):
@@ -1473,36 +1542,44 @@ def get_opt_stem_applications(db: Session = Depends(get_db)):
         return requests
     except Exception as e:
         print(f"Error retrieving OPT STEM Extension applications: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error retrieving applications: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error retrieving applications: {str(e)}")
+
 
 @router.get("/opt-stem-applications/{request_id}", response_model=schemas.OptStemExtensionApplication)
 def get_opt_stem_application(request_id: int, db: Session = Depends(get_db)):
     try:
-        request = db.query(models.OptStemExtensionApplication).filter(models.OptStemExtensionApplication.id == request_id).first()
+        request = db.query(models.OptStemExtensionApplication).filter(
+            models.OptStemExtensionApplication.id == request_id).first()
         if request is None:
-            raise HTTPException(status_code=404, detail="Application not found")
-        
+            raise HTTPException(
+                status_code=404, detail="Application not found")
+
         print(f"Retrieved OPT STEM Extension application {request_id}")
         return request
     except HTTPException:
         raise
     except Exception as e:
         print(f"Error retrieving OPT STEM Extension application: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error retrieving application: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error retrieving application: {str(e)}")
+
 
 @router.delete("/opt-stem-applications/{request_id}")
 def delete_opt_stem_application(request_id: int, db: Session = Depends(get_db)):
     try:
-        request = db.query(models.OptStemExtensionApplication).filter(models.OptStemExtensionApplication.id == request_id).first()
+        request = db.query(models.OptStemExtensionApplication).filter(
+            models.OptStemExtensionApplication.id == request_id).first()
         if request is None:
-            raise HTTPException(status_code=404, detail="Application not found")
-        
+            raise HTTPException(
+                status_code=404, detail="Application not found")
+
         # Clean up uploaded files if they exist
         if request.form_data:
-            file_fields = ['photo_2x2_path', 'form_i983_path', 'passport_path', 'f1_visa_path', 
-                          'i94_path', 'ead_card_path', 'form_i765_path', 'form_g1145_path', 
-                          'diploma_path', 'transcripts_path', 'previous_i20s_path']
-            
+            file_fields = ['photo_2x2_path', 'form_i983_path', 'passport_path', 'f1_visa_path',
+                           'i94_path', 'ead_card_path', 'form_i765_path', 'form_g1145_path',
+                           'diploma_path', 'transcripts_path', 'previous_i20s_path']
+
             for field in file_fields:
                 if request.form_data.get(field):
                     file_path = request.form_data[field]
@@ -1512,10 +1589,10 @@ def delete_opt_stem_application(request_id: int, db: Session = Depends(get_db)):
                             print(f"Deleted file: {file_path}")
                         except Exception as e:
                             print(f"Error deleting file {file_path}: {str(e)}")
-        
+
         db.delete(request)
         db.commit()
-        
+
         print(f"Deleted OPT STEM Extension application {request_id}")
         return {"message": "Application deleted successfully"}
     except HTTPException:
@@ -1523,21 +1600,23 @@ def delete_opt_stem_application(request_id: int, db: Session = Depends(get_db)):
     except Exception as e:
         db.rollback()
         print(f"Error deleting OPT STEM Extension application: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error deleting application: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error deleting application: {str(e)}")
+
 
 @router.delete("/opt-stem-applications/")
 def delete_all_opt_stem_applications(db: Session = Depends(get_db)):
     try:
         requests = db.query(models.OptStemExtensionApplication).all()
         count = len(requests)
-        
+
         # Clean up uploaded files
         for request in requests:
             if request.form_data:
-                file_fields = ['photo_2x2_path', 'form_i983_path', 'passport_path', 'f1_visa_path', 
-                              'i94_path', 'ead_card_path', 'form_i765_path', 'form_g1145_path', 
-                              'diploma_path', 'transcripts_path', 'previous_i20s_path']
-                
+                file_fields = ['photo_2x2_path', 'form_i983_path', 'passport_path', 'f1_visa_path',
+                               'i94_path', 'ead_card_path', 'form_i765_path', 'form_g1145_path',
+                               'diploma_path', 'transcripts_path', 'previous_i20s_path']
+
                 for field in file_fields:
                     if request.form_data.get(field):
                         file_path = request.form_data[field]
@@ -1546,20 +1625,24 @@ def delete_all_opt_stem_applications(db: Session = Depends(get_db)):
                                 os.remove(file_path)
                                 print(f"Deleted file: {file_path}")
                             except Exception as e:
-                                print(f"Error deleting file {file_path}: {str(e)}")
-        
+                                print(
+                                    f"Error deleting file {file_path}: {str(e)}")
+
         # Delete all records
         db.query(models.OptStemExtensionApplication).delete()
         db.commit()
-        
+
         print(f"Deleted {count} OPT STEM Extension applications")
         return {"message": f"Successfully deleted {count} OPT STEM Extension applications"}
     except Exception as e:
         db.rollback()
         print(f"Error deleting OPT STEM Extension applications: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error deleting OPT STEM Extension applications: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error deleting OPT STEM Extension applications: {str(e)}")
 
 # Exit Form Routes
+
+
 @router.post("/exit-forms/", response_model=schemas.ExitForm)
 async def create_exit_form(
     ucf_id: str = Form(...),
@@ -1592,116 +1675,62 @@ async def create_exit_form(
     db: Session = Depends(get_db)
 ):
     try:
-        # Log all received form data for debugging
-        print("Received Exit Form Data:")
-        print(f"UCF ID: {ucf_id}")
-        print(f"Given Name: {given_name}")
-        print(f"Family Name: {family_name}")
-        print(f"UCF Email: {ucf_email}")
-        print(f"Sevis ID: {sevis_id}")
-        print(f"Visa Type: {visa_type}")
-        print(f"Street Address: {us_street_address}")
-        print(f"City: {city}")
-        print(f"State: {state}")
-        print(f"Postal Code: {postal_code}")
-        print(f"Foreign Street Address: {foreign_street_address}")
-        print(f"Foreign City: {foreign_city}")
-        print(f"Country: {country}")
-        print(f"Secondary Email: {secondary_email}")
-        print(f"US Telephone: {us_telephone}")
-        print(f"Foreign Telephone: {foreign_telephone}")
-        print(f"Education Level: {education_level}")
-        print(f"Employed on Campus: {employed_on_campus}")
-        print(f"Departure Date: {departure_date}")
-        print(f"Departure Reason: {departure_reason}")
-        print(f"Work Authorization Acknowledgment: {work_authorization_acknowledgment}")
-        print(f"CPT OPT Acknowledgment: {cpt_opt_acknowledgment}")
-        print(f"Financial Obligations Acknowledgment: {financial_obligations_acknowledgment}")
-        print(f"Remarks: {remarks}")
-        print(f"Flight Itinerary Filename: {flight_itinerary.filename if flight_itinerary else 'None'}")
-
-        # Handle file upload if provided
-        flight_itinerary_path = None
-        if flight_itinerary and flight_itinerary.filename:
-            flight_itinerary_path = await save_upload_file(flight_itinerary, "uploads/exit_forms")
-        
-        # Create student name and ID
-        student_name = f"{given_name} {family_name}"
-        student_id = ucf_id
-        
-        # Convert string booleans to actual booleans
-        def str_to_bool(value):
-            if value is None:
-                return None
-            return value.lower() in ['true', 'yes', '1', 'on']
-        
-        # Prepare form data
-        form_data = {
-            "ucf_id": ucf_id,
-            "sevis_id": sevis_id,
-            "visa_type": visa_type,
-            "given_name": given_name,
-            "family_name": family_name,
-            "us_street_address": us_street_address,
-            "apartment_number": apartment_number,
-            "city": city,
-            "state": state,
-            "postal_code": postal_code,
-            "foreign_street_address": foreign_street_address,
-            "foreign_city": foreign_city,
-            "foreign_postal_code": foreign_postal_code,
-            "country": country,
-            "ucf_email": ucf_email,
-            "secondary_email": secondary_email,
-            "us_telephone": us_telephone,
-            "foreign_telephone": foreign_telephone,
-            "education_level": education_level,
-            "employed_on_campus": employed_on_campus,
-            "departure_date": departure_date,
-            "flight_itinerary_path": flight_itinerary_path,
-            "departure_reason": departure_reason,
-            "work_authorization_acknowledgment": str_to_bool(work_authorization_acknowledgment),
-            "cpt_opt_acknowledgment": str_to_bool(cpt_opt_acknowledgment),
-            "financial_obligations_acknowledgment": str_to_bool(financial_obligations_acknowledgment),
-            "remarks": remarks
-        }
-        
-        # Create database record
-        db_request = models.ExitForm(
-            student_name=student_name,
-            student_id=student_id,
-            program="Exit Form",
-            submission_date=datetime.now(),
-            status="pending",
-            form_data=form_data
+        # Save file
+        flight_itinerary_path = await save_upload_file(
+            flight_itinerary,
+            UPLOAD_PATHS["exit_forms"],
+            ucf_id
         )
-        
-        # Explicitly set required fields in form_data
-        if not form_data.get('ucf_id'):
-            form_data['ucf_id'] = ucf_id
-        if not form_data.get('given_name'):
-            form_data['given_name'] = given_name
-        if not form_data.get('family_name'):
-            form_data['family_name'] = family_name
-        if not form_data.get('ucf_email'):
-            form_data['ucf_email'] = ucf_email
-        
-        # Update the form_data in the database record
-        db_request.form_data = form_data
-        
-        db.add(db_request)
-        db.commit()
-        db.refresh(db_request)
-        
-        print(f"Created Exit Form for {student_name} (ID: {db_request.id})")
-        return db_request
-        
+
+        # Convert booleans
+        bool_fields = convert_multiple_bools({
+            "work_authorization_acknowledgment": work_authorization_acknowledgment,
+            "cpt_opt_acknowledgment": cpt_opt_acknowledgment,
+            "financial_obligations_acknowledgment": financial_obligations_acknowledgment
+        })
+
+        # Create form data
+        form_data = create_form_data_dict(
+            ucf_id=ucf_id,
+            given_name=given_name,
+            family_name=family_name,
+            email=ucf_email,
+            sevis_id=sevis_id,
+            visa_type=visa_type,
+            us_street_address=us_street_address,
+            apartment_number=apartment_number,
+            city=city,
+            state=state,
+            postal_code=postal_code,
+            foreign_street_address=foreign_street_address,
+            foreign_city=foreign_city,
+            foreign_postal_code=foreign_postal_code,
+            country=country,
+            secondary_email=secondary_email,
+            us_telephone=us_telephone,
+            foreign_telephone=foreign_telephone,
+            education_level=education_level,
+            employed_on_campus=employed_on_campus,
+            departure_date=departure_date,
+            flight_itinerary_path=flight_itinerary_path,
+            departure_reason=departure_reason,
+            remarks=remarks,
+            **bool_fields
+        )
+
+        db_request = create_db_record(
+            models.ExitForm,
+            ucf_id, given_name, family_name,
+            "Exit Form",
+            form_data
+        )
+
+        return commit_to_db(db, db_request, f"Created Exit Form for {given_name} {family_name}")
+
     except Exception as e:
         db.rollback()
-        print(f"Error creating Exit Form: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Error creating request: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.get("/exit-forms/", response_model=List[schemas.ExitForm])
 def get_exit_forms(db: Session = Depends(get_db)):
@@ -1711,30 +1740,36 @@ def get_exit_forms(db: Session = Depends(get_db)):
         return requests
     except Exception as e:
         print(f"Error retrieving Exit Forms: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error retrieving requests: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error retrieving requests: {str(e)}")
+
 
 @router.get("/exit-forms/{request_id}", response_model=schemas.ExitForm)
 def get_exit_form(request_id: int, db: Session = Depends(get_db)):
     try:
-        request = db.query(models.ExitForm).filter(models.ExitForm.id == request_id).first()
+        request = db.query(models.ExitForm).filter(
+            models.ExitForm.id == request_id).first()
         if request is None:
             raise HTTPException(status_code=404, detail="Exit Form not found")
-        
+
         print(f"Retrieved Exit Form {request_id}")
         return request
     except HTTPException:
         raise
     except Exception as e:
         print(f"Error retrieving Exit Form: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error retrieving request: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error retrieving request: {str(e)}")
+
 
 @router.delete("/exit-forms/{request_id}")
 def delete_exit_form(request_id: int, db: Session = Depends(get_db)):
     try:
-        request = db.query(models.ExitForm).filter(models.ExitForm.id == request_id).first()
+        request = db.query(models.ExitForm).filter(
+            models.ExitForm.id == request_id).first()
         if request is None:
             raise HTTPException(status_code=404, detail="Exit Form not found")
-        
+
         # Clean up uploaded files if they exist
         if request.form_data and request.form_data.get("flight_itinerary_path"):
             flight_itinerary_path = request.form_data["flight_itinerary_path"]
@@ -1743,11 +1778,12 @@ def delete_exit_form(request_id: int, db: Session = Depends(get_db)):
                     os.remove(flight_itinerary_path)
                     print(f"Deleted file: {flight_itinerary_path}")
                 except Exception as e:
-                    print(f"Error deleting file {flight_itinerary_path}: {str(e)}")
-        
+                    print(
+                        f"Error deleting file {flight_itinerary_path}: {str(e)}")
+
         db.delete(request)
         db.commit()
-        
+
         print(f"Deleted Exit Form {request_id}")
         return {"message": "Request deleted successfully"}
     except HTTPException:
@@ -1755,14 +1791,16 @@ def delete_exit_form(request_id: int, db: Session = Depends(get_db)):
     except Exception as e:
         db.rollback()
         print(f"Error deleting Exit Form: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error deleting request: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error deleting request: {str(e)}")
+
 
 @router.delete("/exit-forms/")
 def delete_all_exit_forms(db: Session = Depends(get_db)):
     try:
         requests = db.query(models.ExitForm).all()
         count = len(requests)
-        
+
         # Clean up uploaded files
         for request in requests:
             if request.form_data and request.form_data.get("flight_itinerary_path"):
@@ -1772,47 +1810,50 @@ def delete_all_exit_forms(db: Session = Depends(get_db)):
                         os.remove(flight_itinerary_path)
                         print(f"Deleted file: {flight_itinerary_path}")
                     except Exception as e:
-                        print(f"Error deleting file {flight_itinerary_path}: {str(e)}")
-        
+                        print(
+                            f"Error deleting file {flight_itinerary_path}: {str(e)}")
+
         # Delete all records
         db.query(models.ExitForm).delete()
         db.commit()
-        
+
         print(f"Deleted {count} Exit Forms")
         return {"message": f"Successfully deleted {count} Exit Forms"}
     except Exception as e:
         db.rollback()
         print(f"Error deleting Exit Forms: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error deleting Exit Forms: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error deleting Exit Forms: {str(e)}")
 
-# Pathway Programs Intent to Progress Routes
-# Helper function to convert string to boolean
-def str_to_bool(value):
-    if value is None:
-        return None
-    return value.lower() in ['true', 'yes', '1', 'on']
 
 @router.post("/pathway-programs-intent-to-progress/", response_model=schemas.PathwayProgramsIntentToProgress)
 async def create_pathway_programs_intent_to_progress(
-    # Student Information
+    # All Form parameters stay the same (lines 1753-1803)
     ucf_id: str = Form(None),
-    first_name: str = Form(None),
-    last_name: str = Form(None),
+    given_name: str = Form(None),
+    family_name: str = Form(None),
     date_of_birth: str = Form(None),
     ethnicity: str = Form(None),
-
-    # Permanent Address
     street_address: str = Form(None),
-    state: str = Form(None),
     city: str = Form(None),
+    state: str = Form(None),
     postal_code: str = Form(None),
     country: str = Form(None),
-
-    # UCF Global Program
     ucf_global_program: str = Form(None),
-
-    # Emergency Contact
     emergency_contact_name: str = Form(None),
+    certification: str = Form(None),
+    has_accelerated_credits: str = Form(None),
+    attended_other_institutions: str = Form(None),
+    disciplinary_action: str = Form(None),
+    felony_conviction: str = Form(None),
+    criminal_proceedings: str = Form(None),
+    expected_progression_term: str = Form(None),
+    academic_credits_earned: str = Form(None),
+    intended_major: str = Form(None),
+    sat_total_score: str = Form(None),
+    sat_date_taken: str = Form(None),
+    act_total_score: str = Form(None),
+    act_date_taken: str = Form(None),
     emergency_contact_relationship: str = Form(None),
     emergency_contact_street_address: str = Form(None),
     emergency_contact_city: str = Form(None),
@@ -1820,148 +1861,116 @@ async def create_pathway_programs_intent_to_progress(
     emergency_contact_postal_code: str = Form(None),
     emergency_contact_country: str = Form(None),
     emergency_contact_phone: str = Form(None),
-
-    # Application Information
-    expected_progression_term: str = Form(None),
-    academic_credits_earned: str = Form(None),
-    intended_major: str = Form(None),
-    has_accelerated_credits: str = Form(None),
-
-    # Post-Secondary Information
-    attended_other_institutions: str = Form(None),
-
-    # College Entrance Exams
-    sat_total_score: str = Form(None),
-    sat_date_taken: str = Form(None),
-    act_total_score: str = Form(None),
-    act_date_taken: str = Form(None),
-
-    # Crime/Disciplinary Questions
-    disciplinary_action: str = Form(None),
-    felony_conviction: str = Form(None),
-    criminal_proceedings: str = Form(None),
-
-    # Disclaimer
-    certification: str = Form(None),
-
     db: Session = Depends(get_db)
 ):
-    """Create a new Pathway Programs Intent to Progress request"""
     try:
-        # Convert string booleans to actual booleans
-        def str_to_bool(val):
-            return val.lower() == 'true' if val else False
+        # Convert booleans
+        bool_fields = convert_multiple_bools({
+            "has_accelerated_credits": has_accelerated_credits,
+            "attended_other_institutions": attended_other_institutions,
+            "disciplinary_action": disciplinary_action,
+            "felony_conviction": felony_conviction,
+            "criminal_proceedings": criminal_proceedings,
+            "certification": certification
+        })
 
-        # Prepare form data dictionary
-        form_data = {
-            # Student Information
-            "ucf_id": ucf_id,
-            "first_name": first_name,
-            "last_name": last_name,
-            "date_of_birth": date_of_birth,
-            "ethnicity": ethnicity,
-
-            # Permanent Address
-            "street_address": street_address,
-            "state": state,
-            "city": city,
-            "postal_code": postal_code,
-            "country": country,
-
-            # UCF Global Program
-            "ucf_global_program": ucf_global_program,
-
-            # Emergency Contact
-            "emergency_contact_name": emergency_contact_name,
-            "emergency_contact_relationship": emergency_contact_relationship,
-            "emergency_contact_street_address": emergency_contact_street_address,
-            "emergency_contact_city": emergency_contact_city,
-            "emergency_contact_state": emergency_contact_state,
-            "emergency_contact_postal_code": emergency_contact_postal_code,
-            "emergency_contact_country": emergency_contact_country,
-            "emergency_contact_phone": emergency_contact_phone,
-
-            # Application Information
-            "expected_progression_term": expected_progression_term,
-            "academic_credits_earned": academic_credits_earned,
-            "intended_major": intended_major,
-            "has_accelerated_credits": str_to_bool(has_accelerated_credits),
-
-            # Post-Secondary Information
-            "attended_other_institutions": str_to_bool(attended_other_institutions),
-
-            # College Entrance Exams
-            "sat_total_score": sat_total_score,
-            "sat_date_taken": sat_date_taken,
-            "act_total_score": act_total_score,
-            "act_date_taken": act_date_taken,
-
-            # Crime/Disciplinary Questions
-            "disciplinary_action": str_to_bool(disciplinary_action),
-            "felony_conviction": str_to_bool(felony_conviction),
-            "criminal_proceedings": str_to_bool(criminal_proceedings),
-
-            # Disclaimer
-            "certification": str_to_bool(certification)
-        }
-
-        # Create the request
-        pathway_programs_request = models.PathwayProgramsIntentToProgress(
-            student_name=f"{first_name} {last_name}".strip(),
-            student_id=ucf_id or "Unknown",
-            program="Pathway Programs Intent to Progress",
-            submission_date=datetime.utcnow(),
-            status="pending",
-            form_data=form_data
+        # Create form data
+        form_data = create_form_data_dict(
+            ucf_id=ucf_id or "Unknown",
+            given_name=given_name,
+            family_name=family_name,
+            date_of_birth=date_of_birth,
+            ethnicity=ethnicity,
+            street_address=street_address,
+            state=state,
+            city=city,
+            postal_code=postal_code,
+            country=country,
+            ucf_global_program=ucf_global_program,
+            emergency_contact_name=emergency_contact_name,
+            emergency_contact_relationship=emergency_contact_relationship,
+            emergency_contact_street_address=emergency_contact_street_address,
+            emergency_contact_city=emergency_contact_city,
+            emergency_contact_state=emergency_contact_state,
+            emergency_contact_postal_code=emergency_contact_postal_code,
+            emergency_contact_country=emergency_contact_country,
+            emergency_contact_phone=emergency_contact_phone,
+            expected_progression_term=expected_progression_term,
+            academic_credits_earned=academic_credits_earned,
+            intended_major=intended_major,
+            sat_total_score=sat_total_score,
+            sat_date_taken=sat_date_taken,
+            act_total_score=act_total_score,
+            act_date_taken=act_date_taken,
+            **bool_fields
         )
 
-        db.add(pathway_programs_request)
-        db.commit()
-        db.refresh(pathway_programs_request)
+        db_request = create_db_record(
+            models.PathwayProgramsIntentToProgress,
+            ucf_id or "Unknown",
+            given_name,
+            family_name,
+            "Pathway Programs Intent to Progress",
+            form_data
+        )
 
-        return pathway_programs_request
+        return commit_to_db(db, db_request)
 
     except Exception as e:
         db.rollback()
-        print(f"Error processing Pathway Programs Intent to Progress request: {str(e)}")
-        raise HTTPException(status_code=400, detail=f"Error processing Pathway Programs Intent to Progress request: {str(e)}")
+        raise HTTPException(status_code=400, detail=str(e))
+
 
 @router.get("/pathway-programs-intent-to-progress/", response_model=List[schemas.PathwayProgramsIntentToProgress])
 def get_pathway_programs_intent_to_progress(db: Session = Depends(get_db)):
     try:
         requests = db.query(models.PathwayProgramsIntentToProgress).all()
-        print(f"Retrieved {len(requests)} Pathway Programs Intent to Progress requests")
+        print(
+            f"Retrieved {len(requests)} Pathway Programs Intent to Progress requests")
         return requests
     except Exception as e:
-        print(f"Error retrieving Pathway Programs Intent to Progress requests: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error retrieving requests: {str(e)}")
+        print(
+            f"Error retrieving Pathway Programs Intent to Progress requests: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error retrieving requests: {str(e)}")
+
 
 @router.get("/pathway-programs-intent-to-progress/{request_id}", response_model=schemas.PathwayProgramsIntentToProgress)
 def get_pathway_programs_intent_to_progress_request(request_id: int, db: Session = Depends(get_db)):
     try:
-        request = db.query(models.PathwayProgramsIntentToProgress).filter(models.PathwayProgramsIntentToProgress.id == request_id).first()
+        request = db.query(models.PathwayProgramsIntentToProgress).filter(
+            models.PathwayProgramsIntentToProgress.id == request_id).first()
         if request is None:
-            raise HTTPException(status_code=404, detail="Pathway Programs Intent to Progress request not found")
-        
-        print(f"Retrieved Pathway Programs Intent to Progress request {request_id}")
+            raise HTTPException(
+                status_code=404, detail="Pathway Programs Intent to Progress request not found")
+
+        print(
+            f"Retrieved Pathway Programs Intent to Progress request {request_id}")
         return request
     except HTTPException:
         raise
     except Exception as e:
-        print(f"Error retrieving Pathway Programs Intent to Progress request: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error retrieving request: {str(e)}")
+        print(
+            f"Error retrieving Pathway Programs Intent to Progress request: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error retrieving request: {str(e)}")
+
 
 @router.delete("/pathway-programs-intent-to-progress/{request_id}", status_code=204)
 def delete_pathway_programs_intent_to_progress_request(request_id: int, db: Session = Depends(get_db)):
     """Delete a specific Pathway Programs Intent to Progress request"""
-    db_request = db.query(models.PathwayProgramsIntentToProgress).filter(models.PathwayProgramsIntentToProgress.id == request_id).first()
+    db_request = db.query(models.PathwayProgramsIntentToProgress).filter(
+        models.PathwayProgramsIntentToProgress.id == request_id).first()
     if db_request is None:
-        raise HTTPException(status_code=404, detail="Pathway Programs Intent to Progress request not found")
-    
+        raise HTTPException(
+            status_code=404, detail="Pathway Programs Intent to Progress request not found")
+
     db.delete(db_request)
     db.commit()
-    print(f"Deleted Pathway Programs Intent to Progress request ID: {request_id}")
+    print(
+        f"Deleted Pathway Programs Intent to Progress request ID: {request_id}")
     return {"message": "Pathway Programs Intent to Progress request deleted successfully"}
+
 
 @router.delete("/pathway-programs-intent-to-progress/", status_code=204)
 def delete_all_pathway_programs_intent_to_progress_requests(db: Session = Depends(get_db)):
@@ -1969,24 +1978,27 @@ def delete_all_pathway_programs_intent_to_progress_requests(db: Session = Depend
     try:
         # Count how many records will be deleted
         count = db.query(models.PathwayProgramsIntentToProgress).count()
-        
+
         # Delete all records
         db.query(models.PathwayProgramsIntentToProgress).delete()
         db.commit()
-        
+
         print(f"Deleted {count} Pathway Programs Intent to Progress requests")
         return {"message": f"Successfully deleted {count} Pathway Programs Intent to Progress requests"}
     except Exception as e:
         db.rollback()
-        print(f"Error deleting Pathway Programs Intent to Progress requests: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error deleting Pathway Programs Intent to Progress requests: {str(e)}")
+        print(
+            f"Error deleting Pathway Programs Intent to Progress requests: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error deleting Pathway Programs Intent to Progress requests: {str(e)}")
+
 
 @router.post("/pathway-programs-next-steps/", response_model=schemas.PathwayProgramsNextSteps)
 async def create_pathway_programs_next_steps(
     # Personal Information
     ucf_id: str = Form(None),
-    first_name: str = Form(None),
-    last_name: str = Form(None),
+    given_name: str = Form(None),
+    family_name: str = Form(None),
     legal_sex: str = Form(None),
     email: str = Form(None),
     phone_number: str = Form(None),
@@ -2009,87 +2021,82 @@ async def create_pathway_programs_next_steps(
 
     db: Session = Depends(get_db)
 ):
-    """Create a new Pathway Programs Next Steps request"""
+
     try:
-        # Convert string booleans to actual booleans
-        def str_to_bool(val):
-            return val.lower() == 'true' if val else False
+        # Convert booleans
+        bool_fields = convert_multiple_bools({
+            "program_acknowledgement": program_acknowledgement,
+            "housing_acknowledgement": housing_acknowledgement,
+            "health_insurance_acknowledgement": health_insurance_acknowledgement
+        })
 
-        # Prepare form data dictionary
-        form_data = {
-            # Personal Information
-            "ucf_id": ucf_id,
-            "first_name": first_name,
-            "last_name": last_name,
-            "legal_sex": legal_sex,
-            "email": email,
-            "phone_number": phone_number,
-
-            # Academic Information
-            "academic_program": academic_program,
-            "academic_track": academic_track,
-            "intended_major": intended_major,
-
-            # Dietary Requirements
-            "dietary_requirements": dietary_requirements,
-
-            # Housing
-            "housing_selection": housing_selection,
-
-            # Acknowledgements
-            "program_acknowledgement": str_to_bool(program_acknowledgement),
-            "housing_acknowledgement": str_to_bool(housing_acknowledgement),
-            "health_insurance_acknowledgement": str_to_bool(health_insurance_acknowledgement)
-        }
-
-        # Create the request
-        pathway_programs_request = models.PathwayProgramsNextSteps(
-            student_name=f"{first_name} {last_name}".strip(),
-            student_id=ucf_id or "Unknown",
-            program="Pathway Programs Next Steps",
-            submission_date=datetime.utcnow(),
-            status="pending",
-            form_data=form_data
+        # Create form data
+        form_data = create_form_data_dict(
+            ucf_id=ucf_id or "Unknown",
+            given_name=given_name,
+            family_name=family_name,
+            email=email,
+            legal_sex=legal_sex,
+            phone_number=phone_number,
+            academic_program=academic_program,
+            academic_track=academic_track,
+            intended_major=intended_major,
+            dietary_requirements=dietary_requirements,
+            housing_selection=housing_selection,
+            **bool_fields
         )
 
-        db.add(pathway_programs_request)
-        db.commit()
-        db.refresh(pathway_programs_request)
+        db_request = create_db_record(
+            models.PathwayProgramsNextSteps,
+            ucf_id or "Unknown",
+            given_name,
+            family_name,
+            "Pathway Programs Next Steps",
+            form_data
+        )
 
-        return pathway_programs_request
+        return commit_to_db(db, db_request)
 
     except Exception as e:
         db.rollback()
-        print(f"Error processing Pathway Programs Next Steps request: {str(e)}")
-        raise HTTPException(status_code=400, detail=f"Error processing Pathway Programs Next Steps request: {str(e)}")
+        raise HTTPException(status_code=400, detail=str(e))
+
 
 @router.get("/pathway-programs-next-steps/", response_model=List[schemas.PathwayProgramsNextSteps])
 def get_pathway_programs_next_steps(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     """Retrieve Pathway Programs Next Steps requests"""
     try:
-        requests = db.query(models.PathwayProgramsNextSteps).offset(skip).limit(limit).all()
+        requests = db.query(models.PathwayProgramsNextSteps).offset(
+            skip).limit(limit).all()
         return requests
     except Exception as e:
-        print(f"Error retrieving Pathway Programs Next Steps requests: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error retrieving Pathway Programs Next Steps requests: {str(e)}")
+        print(
+            f"Error retrieving Pathway Programs Next Steps requests: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error retrieving Pathway Programs Next Steps requests: {str(e)}")
+
 
 @router.delete("/pathway-programs-next-steps/{request_id}", status_code=204)
 def delete_pathway_programs_next_steps_request(request_id: int, db: Session = Depends(get_db)):
     """Delete a specific Pathway Programs Next Steps request"""
     try:
-        request = db.query(models.PathwayProgramsNextSteps).filter(models.PathwayProgramsNextSteps.id == request_id).first()
-        
+        request = db.query(models.PathwayProgramsNextSteps).filter(
+            models.PathwayProgramsNextSteps.id == request_id).first()
+
         if not request:
-            raise HTTPException(status_code=404, detail="Pathway Programs Next Steps request not found")
-        
+            raise HTTPException(
+                status_code=404, detail="Pathway Programs Next Steps request not found")
+
         db.delete(request)
         db.commit()
-        
+
         return {"message": "Pathway Programs Next Steps request deleted successfully"}
     except Exception as e:
         db.rollback()
         print(f"Error deleting Pathway Programs Next Steps request: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error deleting Pathway Programs Next Steps request: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error deleting Pathway Programs Next Steps request: {str(e)}")
+
 
 @router.delete("/pathway-programs-next-steps/", status_code=204)
 def delete_all_pathway_programs_next_steps_requests(db: Session = Depends(get_db)):
@@ -2101,7 +2108,9 @@ def delete_all_pathway_programs_next_steps_requests(db: Session = Depends(get_db
     except Exception as e:
         db.rollback()
         print(f"Error deleting Pathway Programs Next Steps requests: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error deleting Pathway Programs Next Steps requests: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error deleting Pathway Programs Next Steps requests: {str(e)}")
+
 
 @router.post("/reduced-course-load/", response_model=schemas.ReducedCourseLoadRequest)
 async def create_reduced_course_load_request(
@@ -2183,35 +2192,44 @@ async def create_reduced_course_load_request(
     except Exception as e:
         db.rollback()
         print(f"Error processing Reduced Course Load Request: {str(e)}")
-        raise HTTPException(status_code=400, detail=f"Error processing Reduced Course Load Request: {str(e)}")
+        raise HTTPException(
+            status_code=400, detail=f"Error processing Reduced Course Load Request: {str(e)}")
+
 
 @router.get("/reduced-course-load/", response_model=List[schemas.ReducedCourseLoadRequest])
 def get_reduced_course_load_requests(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     """Retrieve Reduced Course Load Requests"""
     try:
-        requests = db.query(models.ReducedCourseLoadRequest).offset(skip).limit(limit).all()
+        requests = db.query(models.ReducedCourseLoadRequest).offset(
+            skip).limit(limit).all()
         return requests
     except Exception as e:
         print(f"Error retrieving Reduced Course Load Requests: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error retrieving Reduced Course Load Requests: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error retrieving Reduced Course Load Requests: {str(e)}")
+
 
 @router.delete("/reduced-course-load/{request_id}", status_code=204)
 def delete_reduced_course_load_request(request_id: int, db: Session = Depends(get_db)):
     """Delete a specific Reduced Course Load Request"""
     try:
-        request = db.query(models.ReducedCourseLoadRequest).filter(models.ReducedCourseLoadRequest.id == request_id).first()
-        
+        request = db.query(models.ReducedCourseLoadRequest).filter(
+            models.ReducedCourseLoadRequest.id == request_id).first()
+
         if not request:
-            raise HTTPException(status_code=404, detail="Reduced Course Load Request not found")
-        
+            raise HTTPException(
+                status_code=404, detail="Reduced Course Load Request not found")
+
         db.delete(request)
         db.commit()
-        
+
         return {"message": "Reduced Course Load Request deleted successfully"}
     except Exception as e:
         db.rollback()
         print(f"Error deleting Reduced Course Load Request: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error deleting Reduced Course Load Request: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error deleting Reduced Course Load Request: {str(e)}")
+
 
 @router.delete("/reduced-course-load/", status_code=204)
 def delete_all_reduced_course_load_requests(db: Session = Depends(get_db)):
@@ -2223,7 +2241,9 @@ def delete_all_reduced_course_load_requests(db: Session = Depends(get_db)):
     except Exception as e:
         db.rollback()
         print(f"Error deleting Reduced Course Load Requests: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error deleting Reduced Course Load Requests: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error deleting Reduced Course Load Requests: {str(e)}")
+
 
 @router.post("/global-transfer-out/", response_model=schemas.GlobalTransferOutRequest)
 async def create_global_transfer_out_request(
@@ -2319,35 +2339,44 @@ async def create_global_transfer_out_request(
     except Exception as e:
         db.rollback()
         print(f"Error processing Global Transfer Out Request: {str(e)}")
-        raise HTTPException(status_code=400, detail=f"Error processing Global Transfer Out Request: {str(e)}")
+        raise HTTPException(
+            status_code=400, detail=f"Error processing Global Transfer Out Request: {str(e)}")
+
 
 @router.get("/global-transfer-out/", response_model=List[schemas.GlobalTransferOutRequest])
 def get_global_transfer_out_requests(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     """Retrieve Global Transfer Out Requests"""
     try:
-        requests = db.query(models.GlobalTransferOutRequest).offset(skip).limit(limit).all()
+        requests = db.query(models.GlobalTransferOutRequest).offset(
+            skip).limit(limit).all()
         return requests
     except Exception as e:
         print(f"Error retrieving Global Transfer Out Requests: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error retrieving Global Transfer Out Requests: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error retrieving Global Transfer Out Requests: {str(e)}")
+
 
 @router.delete("/global-transfer-out/{request_id}", status_code=204)
 def delete_global_transfer_out_request(request_id: int, db: Session = Depends(get_db)):
     """Delete a specific Global Transfer Out Request"""
     try:
-        request = db.query(models.GlobalTransferOutRequest).filter(models.GlobalTransferOutRequest.id == request_id).first()
-        
+        request = db.query(models.GlobalTransferOutRequest).filter(
+            models.GlobalTransferOutRequest.id == request_id).first()
+
         if not request:
-            raise HTTPException(status_code=404, detail="Global Transfer Out Request not found")
-        
+            raise HTTPException(
+                status_code=404, detail="Global Transfer Out Request not found")
+
         db.delete(request)
         db.commit()
-        
+
         return {"message": "Global Transfer Out Request deleted successfully"}
     except Exception as e:
         db.rollback()
         print(f"Error deleting Global Transfer Out Request: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error deleting Global Transfer Out Request: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error deleting Global Transfer Out Request: {str(e)}")
+
 
 @router.delete("/global-transfer-out/", status_code=204)
 def delete_all_global_transfer_out_requests(db: Session = Depends(get_db)):
@@ -2359,46 +2388,48 @@ def delete_all_global_transfer_out_requests(db: Session = Depends(get_db)):
     except Exception as e:
         db.rollback()
         print(f"Error deleting Global Transfer Out Requests: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error deleting Global Transfer Out Requests: {str(e)}")
-    
-    
+        raise HTTPException(
+            status_code=500, detail=f"Error deleting Global Transfer Out Requests: {str(e)}")
+
 
 @router.post("/ucf-global-records-release/", response_model=schemas.UCFGlobalRecordsReleaseForm)
 async def create_ucf_global_records_release_form(
-    request: schemas.UCFGlobalRecordsReleaseFormCreate, 
+    request: schemas.UCFGlobalRecordsReleaseFormCreate,
     db: Session = Depends(get_db)
 ):
     """
     Create a new UCF Global Records Release Form submission.
-    
+
     This endpoint handles the submission of the UCF Global Records Release Authorization Form.
     It validates the incoming request, creates a new database record, and returns the created form.
-    
+
     Args:
         request (UCFGlobalRecordsReleaseFormCreate): The form submission data
         db (Session): Database session dependency
-    
+
     Returns:
         UCFGlobalRecordsReleaseForm: The created form record with assigned ID and submission details
     """
     # Prepare the form data for storage - extract only the nested form_data if it exists
     # If the request has a nested form_data field, use that; otherwise use the entire request
     if hasattr(request, 'form_data') and request.form_data:
-        form_data = request.form_data if isinstance(request.form_data, dict) else request.form_data.__dict__
+        form_data = request.form_data if isinstance(
+            request.form_data, dict) else request.form_data.__dict__
     else:
         # Fallback: exclude the basic fields and store the rest as form_data
-        form_data = request.dict(exclude={"student_name", "student_id", "program"})
-    
+        form_data = request.dict(
+            exclude={"student_name", "student_id", "program"})
+
     # Create the database model instance
     db_form = models.UCFGlobalRecordsReleaseForm(
-        student_name=request.student_name or f"{request.first_name} {request.last_name}",
+        student_name=request.student_name or f"{request.given_name} {request.family_name}",
         student_id=request.student_id or request.ucf_id,
         program=request.program or "UCF Global Records Release",
         submission_date=datetime.now(),
         status="pending",
         form_data=form_data
     )
-    
+
     # Add to database and commit
     try:
         db.add(db_form)
@@ -2408,37 +2439,45 @@ async def create_ucf_global_records_release_form(
     except Exception as e:
         db.rollback()
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error creating UCF Global Records Release Form: {str(e)}"
         )
-        
+
+
 @router.get("/ucf-global-records-release/", response_model=List[schemas.UCFGlobalRecordsReleaseForm])
 def get_ucf_global_records_release_forms(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     """Retrieve UCF Global Records Release Forms"""
     try:
-        requests = db.query(models.UCFGlobalRecordsReleaseForm).offset(skip).limit(limit).all()
+        requests = db.query(models.UCFGlobalRecordsReleaseForm).offset(
+            skip).limit(limit).all()
         return requests
     except Exception as e:
         print(f"Error retrieving UCF Global Records Release Forms: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error retrieving UCF Global Records Release Forms: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error retrieving UCF Global Records Release Forms: {str(e)}")
+
 
 @router.delete("/ucf-global-records-release/{request_id}", status_code=204)
 def delete_ucf_global_records_release_form(request_id: int, db: Session = Depends(get_db)):
     """Delete a specific UCF Global Records Release Form"""
     try:
-        request = db.query(models.UCFGlobalRecordsReleaseForm).filter(models.UCFGlobalRecordsReleaseForm.id == request_id).first()
-        
+        request = db.query(models.UCFGlobalRecordsReleaseForm).filter(
+            models.UCFGlobalRecordsReleaseForm.id == request_id).first()
+
         if not request:
-            raise HTTPException(status_code=404, detail="UCF Global Records Release Form not found")
-        
+            raise HTTPException(
+                status_code=404, detail="UCF Global Records Release Form not found")
+
         db.delete(request)
         db.commit()
-        
+
         return {"message": "UCF Global Records Release Form deleted successfully"}
     except Exception as e:
         db.rollback()
         print(f"Error deleting UCF Global Records Release Form: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error deleting UCF Global Records Release Form: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error deleting UCF Global Records Release Form: {str(e)}")
+
 
 @router.delete("/ucf-global-records-release/", status_code=204)
 def delete_all_ucf_global_records_release_forms(db: Session = Depends(get_db)):
@@ -2450,9 +2489,12 @@ def delete_all_ucf_global_records_release_forms(db: Session = Depends(get_db)):
     except Exception as e:
         db.rollback()
         print(f"Error deleting UCF Global Records Release Forms: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error deleting UCF Global Records Release Forms: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error deleting UCF Global Records Release Forms: {str(e)}")
 
 # Virtual Check In Routes
+
+
 @router.post("/virtual-checkin/", response_model=schemas.VirtualCheckInRequest)
 async def create_virtual_checkin_request(
     # Personal Information
@@ -2461,7 +2503,7 @@ async def create_virtual_checkin_request(
     given_name: str = Form(...),
     family_name: str = Form(...),
     visa_type: str = Form(...),  # F-1 or J-1
-    
+
     # U.S. Address (THIS IS REQUIRED)
     street_address: str = Form(...),
     apartment_number: str = Form(None),
@@ -2472,7 +2514,7 @@ async def create_virtual_checkin_request(
     has_us_telephone: bool = Form(True),
     ucf_email: str = Form(...),
     secondary_email: str = Form(None),
-    
+
     # Emergency Contact
     emergency_given_name: str = Form(None),
     emergency_family_name: str = Form(None),
@@ -2487,31 +2529,31 @@ async def create_virtual_checkin_request(
     emergency_has_us_telephone: bool = Form(True),
     emergency_has_non_us_telephone: bool = Form(True),
     emergency_email: str = Form(None),
-    
+
     # Required Documents
     visa_notice_of_action: UploadFile = File(None),
     form_i94: UploadFile = File(None),
     passport: UploadFile = File(None),
     other_documents: UploadFile = File(None),
-    
+
     # Dependent(s) Information - placeholder for future expansion
     has_dependents: bool = Form(False),
-    
+
     # Submission
     authorization_checked: bool = Form(...),
-    
+
     # Remarks
     remarks: str = Form(None),
-    
+
     db: Session = Depends(get_db)
 ):
     """Create a new Virtual Check In Request with file uploads"""
     try:
         print("Creating Virtual Check In Request...")
-        
+
         # Create student name from given and family name
         student_name = f"{given_name} {family_name}".strip()
-        
+
         # Create form data dictionary
         form_data = {
             "ucf_id": ucf_id,
@@ -2544,24 +2586,24 @@ async def create_virtual_checkin_request(
             "has_dependents": has_dependents,
             "authorization_checked": authorization_checked
         }
-        
+
         # Handle file uploads
         upload_dir = "uploads/virtual_checkin"
         os.makedirs(upload_dir, exist_ok=True)
-        
+
         file_fields = {
             "visa_notice_of_action": visa_notice_of_action,
             "form_i94": form_i94,
             "passport": passport,
             "other_documents": other_documents
         }
-        
+
         for field_name, file in file_fields.items():
             if file and file.filename:
                 file_path = await save_upload_file(file, upload_dir)
                 form_data[f"{field_name}_path"] = file_path
                 print(f"Saved {field_name}: {file_path}")
-        
+
         # Create database record
         db_request = models.VirtualCheckInRequest(
             student_name=student_name,
@@ -2572,55 +2614,66 @@ async def create_virtual_checkin_request(
             form_data=form_data,
             remarks=remarks
         )
-        
+
         db.add(db_request)
         db.commit()
         db.refresh(db_request)
-        
+
         print(f"Created Virtual Check In Request with ID: {db_request.id}")
         return db_request
-        
+
     except Exception as e:
         db.rollback()
         print(f"Error creating Virtual Check In Request: {str(e)}")
         import traceback
         traceback.print_exc()
-        raise HTTPException(status_code=400, detail=f"Error processing Virtual Check In Request: {str(e)}")
+        raise HTTPException(
+            status_code=400, detail=f"Error processing Virtual Check In Request: {str(e)}")
+
 
 @router.get("/virtual-checkin/", response_model=List[schemas.VirtualCheckInRequest])
 def get_virtual_checkin_requests(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     """Retrieve Virtual Check In Requests"""
     try:
-        requests = db.query(models.VirtualCheckInRequest).offset(skip).limit(limit).all()
+        requests = db.query(models.VirtualCheckInRequest).offset(
+            skip).limit(limit).all()
         print(f"Returning {len(requests)} Virtual Check In requests")
         return requests
     except Exception as e:
         print(f"Error retrieving Virtual Check In requests: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error retrieving Virtual Check In requests: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error retrieving Virtual Check In requests: {str(e)}")
+
 
 @router.get("/virtual-checkin/{request_id}", response_model=schemas.VirtualCheckInRequest)
 def get_virtual_checkin_request(request_id: int, db: Session = Depends(get_db)):
     """Retrieve a specific Virtual Check In Request"""
     try:
-        db_request = db.query(models.VirtualCheckInRequest).filter(models.VirtualCheckInRequest.id == request_id).first()
+        db_request = db.query(models.VirtualCheckInRequest).filter(
+            models.VirtualCheckInRequest.id == request_id).first()
         if db_request is None:
-            raise HTTPException(status_code=404, detail="Virtual Check In request not found")
+            raise HTTPException(
+                status_code=404, detail="Virtual Check In request not found")
         print(f"Returning Virtual Check In request with ID: {request_id}")
         return db_request
     except HTTPException:
         raise
     except Exception as e:
         print(f"Error retrieving Virtual Check In request: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error retrieving Virtual Check In request: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error retrieving Virtual Check In request: {str(e)}")
+
 
 @router.delete("/virtual-checkin/{request_id}", status_code=204)
 def delete_virtual_checkin_request(request_id: int, db: Session = Depends(get_db)):
     """Delete a specific Virtual Check In Request"""
     try:
-        db_request = db.query(models.VirtualCheckInRequest).filter(models.VirtualCheckInRequest.id == request_id).first()
+        db_request = db.query(models.VirtualCheckInRequest).filter(
+            models.VirtualCheckInRequest.id == request_id).first()
         if db_request is None:
-            raise HTTPException(status_code=404, detail="Virtual Check In request not found")
-        
+            raise HTTPException(
+                status_code=404, detail="Virtual Check In request not found")
+
         db.delete(db_request)
         db.commit()
         print(f"Deleted Virtual Check In request ID: {request_id}")
@@ -2630,7 +2683,9 @@ def delete_virtual_checkin_request(request_id: int, db: Session = Depends(get_db
     except Exception as e:
         db.rollback()
         print(f"Error deleting Virtual Check In request: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error deleting Virtual Check In request: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error deleting Virtual Check In request: {str(e)}")
+
 
 @router.delete("/virtual-checkin/", status_code=204)
 def delete_all_virtual_checkin_requests(db: Session = Depends(get_db)):
@@ -2644,4 +2699,5 @@ def delete_all_virtual_checkin_requests(db: Session = Depends(get_db)):
     except Exception as e:
         db.rollback()
         print(f"Error deleting Virtual Check In requests: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error deleting Virtual Check In requests: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error deleting Virtual Check In requests: {str(e)}")

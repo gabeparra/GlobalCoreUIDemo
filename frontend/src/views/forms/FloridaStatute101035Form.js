@@ -58,11 +58,11 @@ export default function FloridaStatute101035Form() {
 
             // Convert camelCase to snake_case for backend
             submitData.append('ucf_id', formData.ucfId)
-            submitData.append('first_name', formData.firstName)
-            submitData.append('last_name', formData.lastName)
+            submitData.append('given_name', formData.firstName)
+            submitData.append('family_name', formData.lastName)
             submitData.append('date_of_birth', formData.dateOfBirth)
             submitData.append('telephone_number', formData.telephoneNumber)
-            submitData.append('email_address', formData.emailAddress)
+            submitData.append('email', formData.emailAddress)
             submitData.append('sevis_number', formData.sevisNumber || '')
             submitData.append('college', formData.college)
             submitData.append('department', formData.department)

@@ -11,8 +11,8 @@ export default function PathwayProgramsNextSteps() {
     const [formData, setFormData] = useState({
         // Personal Information
         ucf_id: '',
-        first_name: '',
-        last_name: '',
+        given_name: '',
+        family_name: '',
         legal_sex: '',
         email: '',
         phone_number: '',
@@ -50,8 +50,8 @@ export default function PathwayProgramsNextSteps() {
         setFormData({
             // Personal Information
             ucf_id: import.meta.env.VITE_PLACEHOLDER_PATHWAY_UCF_ID,
-            first_name: import.meta.env.VITE_PLACEHOLDER_PATHWAY_FIRST_NAME,
-            last_name: import.meta.env.VITE_PLACEHOLDER_PATHWAY_LAST_NAME,
+            given_name: import.meta.env.VITE_PLACEHOLDER_GIVEN_NAME,
+            family_name: import.meta.env.VITE_PLACEHOLDER_FAMILY_NAME,
             legal_sex: 'M', // Default, as not specified in env
             email: import.meta.env.VITE_PLACEHOLDER_STUDENT_EMAIL || 'test@ucf.edu',
             phone_number: import.meta.env.VITE_PLACEHOLDER_US_TELEPHONE,
@@ -173,8 +173,8 @@ export default function PathwayProgramsNextSteps() {
                             <CFormLabel>First Name</CFormLabel>
                             <CFormInput
                                 type="text"
-                                name="first_name"
-                                value={formData.first_name}
+                                name="given_name"
+                                value={formData.given_name}
                                 onChange={handleChange}
                                 placeholder="Enter your first name"
                                 required
@@ -184,8 +184,8 @@ export default function PathwayProgramsNextSteps() {
                             <CFormLabel>Last Name</CFormLabel>
                             <CFormInput
                                 type="text"
-                                name="last_name"
-                                value={formData.last_name}
+                                name="family_name"
+                                value={formData.family_name}
                                 onChange={handleChange}
                                 placeholder="Enter your last name"
                                 required

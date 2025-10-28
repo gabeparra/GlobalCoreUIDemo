@@ -15,8 +15,8 @@ export default function PathwayProgramsIntentToProgress() {
     const [formData, setFormData] = useState({
         // Student Information
         ucf_id: import.meta.env.VITE_PLACEHOLDER_PATHWAY_UCF_ID || '',
-        first_name: import.meta.env.VITE_PLACEHOLDER_PATHWAY_FIRST_NAME || '',
-        last_name: import.meta.env.VITE_PLACEHOLDER_PATHWAY_LAST_NAME || '',
+        given_name: import.meta.env.VITE_PLACEHOLDER_GIVEN_NAME || '',
+        family_name: import.meta.env.VITE_PLACEHOLDER_FAMILY_NAME || '',
         date_of_birth: import.meta.env.VITE_PLACEHOLDER_PATHWAY_DATE_OF_BIRTH || '',
         ethnicity: import.meta.env.VITE_PLACEHOLDER_PATHWAY_ETHNICITY || '',
 
@@ -162,22 +162,22 @@ export default function PathwayProgramsIntentToProgress() {
                                         />
                                     </CCol>
                                     <CCol md={6}>
-                                        <CFormLabel>First Name</CFormLabel>
+                                        <CFormLabel>Given Name</CFormLabel>
                                         <CFormInput
                                             type="text"
-                                            name="first_name"
-                                            value={formData.first_name}
+                                            name="given_name"
+                                            value={formData.given_name}
                                             onChange={handleInputChange}
                                         />
                                     </CCol>
                                 </CRow>
                                 <CRow className="mb-3">
                                     <CCol md={6}>
-                                        <CFormLabel>Last Name</CFormLabel>
+                                        <CFormLabel>Family Name</CFormLabel>
                                         <CFormInput
                                             type="text"
-                                            name="last_name"
-                                            value={formData.last_name}
+                                            name="family_name"
+                                            value={formData.family_name}
                                             onChange={handleInputChange}
                                         />
                                     </CCol>

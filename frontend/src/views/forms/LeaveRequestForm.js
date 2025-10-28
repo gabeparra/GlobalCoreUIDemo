@@ -24,8 +24,8 @@ export default function LeaveRequestForm() {
 
     const [formData, setFormData] = useState({
         employeeId: import.meta.env.VITE_PLACEHOLDER_UCF_ID || "1234567",
-        firstName: import.meta.env.VITE_PLACEHOLDER_GIVEN_NAME || "John",
-        lastName: import.meta.env.VITE_PLACEHOLDER_FAMILY_NAME || "Doe",
+        given_name: import.meta.env.VITE_PLACEHOLDER_GIVEN_NAME || "John",
+        family_name: import.meta.env.VITE_PLACEHOLDER_FAMILY_NAME || "Doe",
         leaveType: import.meta.env.VITE_PLACEHOLDER_LEAVE_TYPE || "sick",
         documentation: null,
         fromDate: import.meta.env.VITE_PLACEHOLDER_LEAVE_FROM_DATE || "2025-10-24",
@@ -50,7 +50,7 @@ export default function LeaveRequestForm() {
 
         try {
             // Validate required fields
-            if (!formData.employeeId || !formData.firstName || !formData.lastName ||
+            if (!formData.employeeId || !formData.given_name || !formData.family_name ||
                 !formData.leaveType || !formData.fromDate || !formData.fromTime ||
                 !formData.toDate || !formData.toTime || !formData.hoursRequested) {
                 throw new Error('Please fill in all required fields')
@@ -61,8 +61,8 @@ export default function LeaveRequestForm() {
 
             // Add all form fields
             submitData.append('employee_id', formData.employeeId)
-            submitData.append('first_name', formData.firstName)
-            submitData.append('last_name', formData.lastName)
+            submitData.append('given_name', formData.given_name)
+            submitData.append('family_name', formData.family_name)
             submitData.append('leave_type', formData.leaveType)
             submitData.append('from_date', formData.fromDate)
             submitData.append('from_time', formData.fromTime)
@@ -192,8 +192,8 @@ export default function LeaveRequestForm() {
                                             </CFormLabel>
                                             <CFormInput
                                                 type="text"
-                                                value={formData.firstName}
-                                                onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                                                value={formData.given_name}
+                                                onChange={(e) => setFormData({ ...formData, given_name: e.target.value })}
                                             />
                                         </div>
                                     </CCol>
@@ -207,8 +207,8 @@ export default function LeaveRequestForm() {
                                             </CFormLabel>
                                             <CFormInput
                                                 type="text"
-                                                value={formData.lastName}
-                                                onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                                                value={formData.family_name}
+                                                onChange={(e) => setFormData({ ...formData, family_name: e.target.value })}
                                             />
                                         </div>
                                     </CCol>

@@ -125,10 +125,6 @@ export default function AcademicTrainingForm() {
             }
         }
 
-        // Documents (temporarily commented out for testing with placeholder data)
-        // if (!form.offerLetter) e.offerLetter = 'Signed offer letter is required'
-        // if (!form.trainingAuthorization) e.trainingAuthorization = 'Completed Academic Authorization Training Form is required'
-
         // Statements of Agreement
         if (form.completionType === 'pre' && !form.understandPreCompletion) {
             e.understandPreCompletion = 'You must agree to this statement'
@@ -778,34 +774,28 @@ export default function AcademicTrainingForm() {
                             <div className="mb-4">
                                 <h5 className="border-bottom pb-2">Statements of Agreement</h5>
                                 <CRow className="mb-3 mt-3">
-                                    {form.completionType === 'pre' && (
-                                        <CCol xs={12} className="mb-3">
-                                            <CFormCheck
-                                                id="understandPreCompletion"
-                                                name="understandPreCompletion"
-                                                label="I understand that I must apply for academic training before the completion of my J-1 program"
-                                                checked={form.understandPreCompletion}
-                                                onChange={update}
-                                                invalid={!!errors.understandPreCompletion}
-                                                feedbackInvalid={errors.understandPreCompletion}
-                                            />
-                                        </CCol>
-                                    )}
-
-                                    {form.completionType === 'post' && (
-                                        <CCol xs={12} className="mb-3">
-                                            <CFormCheck
-                                                id="understandPostCompletion"
-                                                name="understandPostCompletion"
-                                                label="I understand that for post-completion academic training, employment must begin no later than 30 days after completion of studies"
-                                                checked={form.understandPostCompletion}
-                                                onChange={update}
-                                                invalid={!!errors.understandPostCompletion}
-                                                feedbackInvalid={errors.understandPostCompletion}
-                                            />
-                                        </CCol>
-                                    )}
-
+                                    <CCol xs={12} className="mb-3">
+                                        <CFormCheck
+                                            id="understandPreCompletion"
+                                            name="understandPreCompletion"
+                                            label="I understand that I must apply for academic training before the completion of my J-1 program"
+                                            checked={form.understandPreCompletion}
+                                            onChange={update}
+                                            invalid={!!errors.understandPreCompletion}
+                                            feedbackInvalid={errors.understandPreCompletion}
+                                        />
+                                    </CCol>
+                                    <CCol xs={12} className="mb-3">
+                                        <CFormCheck
+                                            id="understandPostCompletion"
+                                            name="understandPostCompletion"
+                                            label="I understand that for post-completion academic training, employment must begin no later than 30 days after completion of studies"
+                                            checked={form.understandPostCompletion}
+                                            onChange={update}
+                                            invalid={!!errors.understandPostCompletion}
+                                            feedbackInvalid={errors.understandPostCompletion}
+                                        />
+                                    </CCol>
                                     <CCol xs={12} className="mb-3">
                                         <CFormCheck
                                             id="understandMedicalInsurance"
