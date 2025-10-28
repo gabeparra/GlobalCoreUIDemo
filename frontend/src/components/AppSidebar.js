@@ -8,6 +8,7 @@ import {
   CSidebarFooter,
   CSidebarHeader,
   CSidebarToggler,
+  useColorModes,
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
 
@@ -20,11 +21,11 @@ const AppSidebar = () => {
   const dispatch = useDispatch()
   const unfoldable = useSelector((state) => state.sidebarUnfoldable)
   const sidebarShow = useSelector((state) => state.sidebarShow)
-
+  const { colorMode } = useColorModes('coreui-free-react-admin-template-theme')
   return (
     <CSidebar
       className="border-end"
-      colorScheme="dark"
+      colorScheme={colorMode}
       position="fixed"
       unfoldable={unfoldable}
       visible={sidebarShow}
