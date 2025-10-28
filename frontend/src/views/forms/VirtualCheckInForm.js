@@ -226,7 +226,7 @@ const VirtualCheckInForm = () => {
             formData.append('authorization_checked', submission.authorizationChecked);
             formData.append('remarks', submission.remarks || '');
 
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/virtual-checkin/`, {
+            const response = await fetch('http://localhost:8000/api/virtual-checkin/', {
                 method: 'POST',
                 body: formData
             });
@@ -242,7 +242,7 @@ const VirtualCheckInForm = () => {
 
             // Navigate to success page or form list after a delay
             setTimeout(() => {
-                navigate('/forms');
+                window.location.href = '/#/forms/all-requests';
             }, 3000);
 
         } catch (err) {
@@ -735,7 +735,7 @@ const VirtualCheckInForm = () => {
                                         <CButton
                                             type="button"
                                             color="secondary"
-                                            onClick={() => navigate('/forms')}
+                                            onClick={() => { window.location.href = '/#/forms/all-requests' }}
                                         >
                                             Back to Forms
                                         </CButton>
@@ -761,7 +761,7 @@ const VirtualCheckInForm = () => {
                     </CCard>
                 </CCol>
             </CRow>
-        </CContainer>
+        </CContainer >
     );
 };
 

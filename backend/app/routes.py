@@ -34,24 +34,22 @@ def create_i20_request(request: schemas.I20RequestCreate, db: Session = Depends(
         print(f"Received request: {request}")
 
         # Convert the request model to a dict for JSON storage
-        form_data = request.dict(
+        form_data = request.model_dump(
             exclude={"student_name", "student_id", "program", "other_reason"})
 
-        # Create the database record
-        db_request = models.I20Request(
-            student_name=request.student_name,
-            student_id=request.student_id,
-            program=request.program,
-            submission_date=datetime.now(),
-            status="pending",
-            form_data=form_data,
-            other_reason=request.other_reason
+        # Create and commit DB record
+        db_request = create_db_record(
+            models.I20Request,
+            request.student_id,
+            request.given_name,
+            request.family_name,
+            request.program,
+            form_data,
+            other_reason=request.other_reason  # Extra field specific to I-20
         )
 
-        db.add(db_request)
-        db.commit()
-        db.refresh(db_request)
-        return db_request
+        return commit_to_db(db, db_request)
+
     except Exception as e:
         print(f"Error processing request: {str(e)}")
         import traceback
@@ -336,35 +334,24 @@ def delete_all_academic_training_requests(db: Session = Depends(get_db)):
 @router.post("/administrative-record/", response_model=schemas.AdministrativeRecordRequest)
 def create_administrative_record_request(request: schemas.AdministrativeRecordRequestCreate, db: Session = Depends(get_db)):
     try:
-        print(f"Received Administrative Record request: {request}")
-
         # Convert the request model to a dict for JSON storage
-        form_data = request.dict(
+        form_data = request.model_dump(
             exclude={"student_name", "student_id", "program"})
 
-        # Create the database record
-        db_request = models.AdministrativeRecordRequest(
-            student_name=request.student_name,
-            student_id=request.student_id,
-            program=request.program,
-            submission_date=datetime.now(),
-            status="pending",
-            form_data=form_data
+        # Create and commit DB record
+        db_request = create_db_record(
+            models.AdministrativeRecordRequest,
+            request.student_id,
+            request.given_name,
+            request.family_name,
+            request.program,
+            form_data
         )
 
-        db.add(db_request)
-        db.commit()
-        db.refresh(db_request)
-
-        print(
-            f"Administrative Record request created with ID: {db_request.id}")
-        return db_request
+        return commit_to_db(db, db_request)
     except Exception as e:
-        print(f"Error processing Administrative Record request: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(
-            status_code=400, detail=f"Error processing Administrative Record request: {str(e)}")
+        db.rollback()
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/administrative-record/", response_model=List[schemas.AdministrativeRecordRequest])
@@ -429,26 +416,23 @@ def create_conversation_partner_request(request: schemas.ConversationPartnerRequ
         print(f"Received Conversation Partner request: {request}")
 
         # Convert the request model to a dict for JSON storage
-        form_data = request.dict(
+        form_data = request.model_dump(
             exclude={"student_name", "student_id", "program"})
 
-        # Create the database record
-        db_request = models.ConversationPartnerRequest(
-            student_name=request.student_name,
-            student_id=request.student_id,
-            program=request.program,
-            submission_date=datetime.now(),
-            status="pending",
-            form_data=form_data
+        # Create and commit DB record
+        db_request = create_db_record(
+            models.ConversationPartnerRequest,
+            request.student_id,
+            request.given_name,
+            request.family_name,
+            request.program or "Conversation Partner",
+            form_data
         )
 
-        db.add(db_request)
-        db.commit()
-        db.refresh(db_request)
+        return commit_to_db(db, db_request, f"Conversation Partner request created with ID: {db_request.id}")
 
-        print(f"Conversation Partner request created with ID: {db_request.id}")
-        return db_request
     except Exception as e:
+        db.rollback()
         print(f"Error processing Conversation Partner request: {str(e)}")
         import traceback
         traceback.print_exc()
@@ -556,90 +540,70 @@ async def create_opt_request(
 ):
     """Create a new OPT Request with file uploads"""
     try:
-        print("Creating OPT Request...")
-
-        # Create student name from given and family name
-        student_name = f"{given_name} {family_name}".strip()
-
-        # Create form data dictionary
-        form_data = {
-            "ucf_id": ucf_id,
-            "given_name": given_name,
-            "family_name": family_name,
-            "date_of_birth": date_of_birth,
-            "legal_sex": legal_sex,
-            "country_of_citizenship": country_of_citizenship,
-            "academic_level": academic_level,
-            "academic_program": academic_program,
-            "address": address,
-            "address2": address2,
-            "city": city,
-            "state": state,
-            "postal_code": postal_code,
-            "ucf_email_address": ucf_email_address,
-            "secondary_email_address": secondary_email_address,
-            "telephone_number": telephone_number,
-            "information_correct": information_correct,
-            "full_time_student": full_time_student,
-            "intent_to_graduate": intent_to_graduate,
-            "semester_of_graduation": semester_of_graduation,
-            "desired_opt_start_date": desired_opt_start_date,
-            "desired_opt_end_date": desired_opt_end_date,
-            "currently_employed_on_campus": currently_employed_on_campus,
-            "previous_opt_authorization": previous_opt_authorization,
-            "opt_workshop_completed": opt_workshop_completed,
-            "opt_request_timeline": opt_request_timeline,
-            "ead_card_copy": ead_card_copy,
-            "report_changes": report_changes,
-            "unemployment_limit": unemployment_limit,
-            "employment_start_date": employment_start_date
-        }
-
-        # Handle file uploads
-        upload_dir = "uploads/opt_requests"
-        os.makedirs(upload_dir, exist_ok=True)
-
-        file_fields = {
-            "photo2x2": photo2x2,
-            "passport_biographical": passport_biographical,
-            "f1_visa_or_uscis_notice": f1_visa_or_uscis_notice,
-            "i94": i94,
-            "form_i765": form_i765,
-            "form_g1145": form_g1145,
-            "previous_i20s": previous_i20s,
-            "previous_ead": previous_ead
-        }
-
-        for field_name, file in file_fields.items():
-            if file and file.filename:
-                file_path = await save_upload_file(file, upload_dir)
-                form_data[field_name] = file_path
-                print(f"Saved {field_name}: {file_path}")
-
-        # Create database record
-        db_request = models.OPTRequest(
-            student_name=student_name,
-            student_id=ucf_id,
-            program="OPT Request",
-            submission_date=datetime.now(),
-            status="pending",
-            form_data=form_data
+        # Save all files with student ID
+        file_paths = await save_multiple_files(
+            files_dict={
+                "photo2x2": photo2x2,
+                "passport_biographical": passport_biographical,
+                "f1_visa_or_uscis_notice": f1_visa_or_uscis_notice,
+                "i94": i94,
+                "form_i765": form_i765,
+                "form_g1145": form_g1145,
+                "previous_i20s": previous_i20s,
+                "previous_ead": previous_ead
+            },
+            destination_dir=UPLOAD_PATHS["opt_requests"],
+            ucf_id=ucf_id
         )
 
-        db.add(db_request)
-        db.commit()
-        db.refresh(db_request)
+        # Create form data
+        form_data = create_form_data_dict(
+            ucf_id=ucf_id,
+            given_name=given_name,
+            family_name=family_name,
+            email=ucf_email_address,
+            date_of_birth=date_of_birth,
+            legal_sex=legal_sex,
+            country_of_citizenship=country_of_citizenship,
+            academic_level=academic_level,
+            academic_program=academic_program,
+            address=address,
+            address2=address2,
+            city=city,
+            state=state,
+            postal_code=postal_code,
+            secondary_email_address=secondary_email_address,
+            telephone_number=telephone_number,
+            information_correct=information_correct,
+            full_time_student=full_time_student,
+            intent_to_graduate=intent_to_graduate,
+            semester_of_graduation=semester_of_graduation,
+            desired_opt_start_date=desired_opt_start_date,
+            desired_opt_end_date=desired_opt_end_date,
+            currently_employed_on_campus=currently_employed_on_campus,
+            previous_opt_authorization=previous_opt_authorization,
+            opt_workshop_completed=opt_workshop_completed,
+            opt_request_timeline=opt_request_timeline,
+            ead_card_copy=ead_card_copy,
+            report_changes=report_changes,
+            unemployment_limit=unemployment_limit,
+            employment_start_date=employment_start_date,
+            **file_paths
+        )
 
-        print(f"Created OPT Request with ID: {db_request.id}")
-        return db_request
+        # Create and commit DB record
+        db_request = create_db_record(
+            models.OPTRequest,
+            ucf_id, given_name, family_name,
+            "OPT Request",
+            form_data
+        )
+
+        return commit_to_db(db, db_request)
 
     except Exception as e:
         db.rollback()
-        print(f"Error creating OPT Request: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(
-            status_code=400, detail=f"Error processing OPT Request: {str(e)}")
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/opt-requests/", response_model=List[schemas.OPTRequest])
@@ -801,26 +765,21 @@ def create_english_language_volunteer_request(request: schemas.EnglishLanguageVo
         print(f"Received English Language Volunteer request: {request}")
 
         # Convert the request model to a dict for JSON storage
-        form_data = request.dict(
+        form_data = request.model_dump(
             exclude={"student_name", "student_id", "program"})
 
-        # Create the database record
-        db_request = models.EnglishLanguageVolunteerRequest(
-            student_name=request.student_name,
-            student_id=request.student_id,
-            program=request.program,
-            submission_date=datetime.now(),
-            status="pending",
-            form_data=form_data
+        # Create and commit DB record
+        db_request = create_db_record(
+            models.EnglishLanguageVolunteerRequest,
+            request.student_id,
+            request.given_name,
+            request.family_name,
+            request.program,
+            form_data
         )
 
-        db.add(db_request)
-        db.commit()
-        db.refresh(db_request)
+        return commit_to_db(db, db_request, f"Created English Language Volunteer request with ID: {db_request.id}")
 
-        print(
-            f"Created English Language Volunteer request with ID: {db_request.id}")
-        return db_request
     except Exception as e:
         db.rollback()
         print(f"Error creating English Language Volunteer request: {str(e)}")
@@ -905,25 +864,21 @@ def create_off_campus_housing_request(request: schemas.OffCampusHousingRequestCr
         print(f"Received Off Campus Housing request: {request}")
 
         # Convert the request model to a dict for JSON storage
-        form_data = request.dict(
+        form_data = request.model_dump(
             exclude={"student_name", "student_id", "program"})
 
-        # Create the database record
-        db_request = models.OffCampusHousingRequest(
-            student_name=request.student_name,
-            student_id=request.student_id,
-            program=request.program,
-            submission_date=datetime.now(),
-            status="pending",
-            form_data=form_data
+        # Create and commit DB record
+        db_request = create_db_record(
+            models.OffCampusHousingRequest,
+            request.student_id,
+            request.given_name,
+            request.family_name,
+            request.program,
+            form_data
         )
 
-        db.add(db_request)
-        db.commit()
-        db.refresh(db_request)
+        return commit_to_db(db, db_request, f"Created Off Campus Housing request with ID: {db_request.id}")
 
-        print(f"Created Off Campus Housing request with ID: {db_request.id}")
-        return db_request
     except Exception as e:
         db.rollback()
         print(f"Error creating Off Campus Housing request: {str(e)}")
@@ -1311,25 +1266,21 @@ def create_opt_stem_report(request: schemas.OptStemExtensionReportCreate, db: Se
         print(f"Received OPT STEM Extension Report: {request}")
 
         # Convert the request model to a dict for JSON storage
-        form_data = request.dict(
+        form_data = request.model_dump(
             exclude={"student_name", "student_id", "program"})
 
-        # Create the database record
-        db_request = models.OptStemExtensionReport(
-            student_name=request.student_name,
-            student_id=request.student_id,
-            program=request.program,
-            submission_date=datetime.now(),
-            status="pending",
-            form_data=form_data
+        # Create and commit DB record
+        db_request = create_db_record(
+            models.OptStemExtensionReport,
+            request.student_id,
+            request.given_name,
+            request.family_name,
+            request.program,
+            form_data
         )
 
-        db.add(db_request)
-        db.commit()
-        db.refresh(db_request)
+        return commit_to_db(db, db_request, f"Created OPT STEM Extension Report with ID: {db_request.id}")
 
-        print(f"Created OPT STEM Extension Report with ID: {db_request.id}")
-        return db_request
     except Exception as e:
         print(f"Error processing OPT STEM Extension Report: {str(e)}")
         import traceback
@@ -2144,56 +2095,45 @@ async def create_reduced_course_load_request(
 ):
     """Create a new Reduced Course Load Request"""
     try:
-        # Prepare form data dictionary
-        form_data = {
-            # Student Information
-            "ucf_id": ucf_id,
-            "sevis_id": sevis_id,
-            "visa_type": visa_type,
-            "given_name": given_name,
-            "family_name": family_name,
-            "street_address": street_address,
-            "apartment_number": apartment_number,
-            "city": city,
-            "state": state,
-            "postal_code": postal_code,
-            "ucf_email_address": ucf_email_address,
-            "secondary_email_address": secondary_email_address,
-            "us_telephone_number": us_telephone_number,
-
-            # Academic Information
-            "academic_level": academic_level,
-            "academic_program_major": academic_program_major,
-            "rcl_term": rcl_term,
-            "rcl_year": rcl_year,
-            "desired_credits": desired_credits,
-            "in_person_credits": in_person_credits,
-
-            # RCL Reason
-            "rcl_reason": rcl_reason
-        }
-
-        # Create the request
-        reduced_course_load_request = models.ReducedCourseLoadRequest(
-            student_name=f"{given_name} {family_name}".strip(),
-            student_id=ucf_id or "Unknown",
-            program="Reduced Course Load Request",
-            submission_date=datetime.utcnow(),
-            status="pending",
-            form_data=form_data
+        # Create form data
+        form_data = create_form_data_dict(
+            ucf_id=ucf_id or "Unknown",
+            given_name=given_name,
+            family_name=family_name,
+            email=ucf_email_address,
+            sevis_id=sevis_id,
+            visa_type=visa_type,
+            street_address=street_address,
+            apartment_number=apartment_number,
+            city=city,
+            state=state,
+            postal_code=postal_code,
+            secondary_email_address=secondary_email_address,
+            us_telephone_number=us_telephone_number,
+            academic_level=academic_level,
+            academic_program_major=academic_program_major,
+            rcl_term=rcl_term,
+            rcl_year=rcl_year,
+            desired_credits=desired_credits,
+            in_person_credits=in_person_credits,
+            rcl_reason=rcl_reason
         )
 
-        db.add(reduced_course_load_request)
-        db.commit()
-        db.refresh(reduced_course_load_request)
+        # Create and commit DB record
+        db_request = create_db_record(
+            models.ReducedCourseLoadRequest,
+            ucf_id or "Unknown",
+            given_name,
+            family_name,
+            "Reduced Course Load Request",
+            form_data
+        )
 
-        return reduced_course_load_request
+        return commit_to_db(db, db_request)
 
     except Exception as e:
         db.rollback()
-        print(f"Error processing Reduced Course Load Request: {str(e)}")
-        raise HTTPException(
-            status_code=400, detail=f"Error processing Reduced Course Load Request: {str(e)}")
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/reduced-course-load/", response_model=List[schemas.ReducedCourseLoadRequest])
@@ -2280,67 +2220,70 @@ async def create_global_transfer_out_request(
     understanding_work_authorization: str = Form(None),
     understanding_financial_obligations: str = Form(None),
 
+    # File uploads
+    admission_letter: UploadFile = File(None),
+
     db: Session = Depends(get_db)
 ):
     """Create a new Global Transfer Out Request"""
     try:
-        # Prepare form data dictionary
-        form_data = {
-            # Student Information
-            "ucf_id": ucf_id,
-            "sevis_id": sevis_id,
-            "visa_type": visa_type,
-            "given_name": given_name,
-            "family_name": family_name,
-            "street_address": street_address,
-            "apartment_number": apartment_number,
-            "city": city,
-            "state": state,
-            "postal_code": postal_code,
-            "ucf_email_address": ucf_email_address,
-            "secondary_email_address": secondary_email_address,
-            "us_telephone_number": us_telephone_number,
-
-            # Current Academic Information
-            "ucf_education_level": ucf_education_level,
-            "campus_employment": campus_employment,
-
-            # New School Information
-            "new_school_name": new_school_name,
-            "new_school_start_date": new_school_start_date,
-            "desired_sevis_release_date": desired_sevis_release_date,
-            "new_school_international_advisor_name": new_school_international_advisor_name,
-            "new_school_international_advisor_email": new_school_international_advisor_email,
-            "new_school_international_advisor_phone": new_school_international_advisor_phone,
-
-            # Additional Information Checkboxes
-            "understanding_sevis_release": understanding_sevis_release == 'true',
-            "permission_to_communicate": permission_to_communicate == 'true',
-            "understanding_work_authorization": understanding_work_authorization == 'true',
-            "understanding_financial_obligations": understanding_financial_obligations == 'true'
-        }
-
-        # Create the request
-        global_transfer_out_request = models.GlobalTransferOutRequest(
-            student_name=f"{given_name} {family_name}".strip(),
-            student_id=ucf_id or "Unknown",
-            program="Global Transfer Out Request",
-            submission_date=datetime.utcnow(),
-            status="pending",
-            form_data=form_data
+        # Convert booleans
+        bool_fields = convert_multiple_bools({
+            "understanding_sevis_release": understanding_sevis_release,
+            "permission_to_communicate": permission_to_communicate,
+            "understanding_work_authorization": understanding_work_authorization,
+            "understanding_financial_obligations": understanding_financial_obligations
+        })
+        # Save admission letter if provided
+        admission_letter_path = await save_upload_file(
+            admission_letter,
+            UPLOAD_PATHS.get("global_transfer_out",
+                             "uploads/global_transfer_out"),
+            ucf_id or "Unknown"
         )
 
-        db.add(global_transfer_out_request)
-        db.commit()
-        db.refresh(global_transfer_out_request)
+        # Create form data
+        form_data = create_form_data_dict(
+            ucf_id=ucf_id or "Unknown",
+            given_name=given_name,
+            family_name=family_name,
+            admission_letter_path=admission_letter_path,
+            email=ucf_email_address,
+            sevis_id=sevis_id,
+            visa_type=visa_type,
+            street_address=street_address,
+            apartment_number=apartment_number,
+            city=city,
+            state=state,
+            postal_code=postal_code,
+            secondary_email_address=secondary_email_address,
+            us_telephone_number=us_telephone_number,
+            ucf_education_level=ucf_education_level,
+            campus_employment=campus_employment,
+            new_school_name=new_school_name,
+            new_school_start_date=new_school_start_date,
+            desired_sevis_release_date=desired_sevis_release_date,
+            new_school_international_advisor_name=new_school_international_advisor_name,
+            new_school_international_advisor_email=new_school_international_advisor_email,
+            new_school_international_advisor_phone=new_school_international_advisor_phone,
+            **bool_fields
+        )
 
-        return global_transfer_out_request
+        # Create and commit DB record
+        db_request = create_db_record(
+            models.GlobalTransferOutRequest,
+            ucf_id or "Unknown",
+            given_name,
+            family_name,
+            "Global Transfer Out Request",
+            form_data
+        )
+
+        return commit_to_db(db, db_request)
 
     except Exception as e:
         db.rollback()
-        print(f"Error processing Global Transfer Out Request: {str(e)}")
-        raise HTTPException(
-            status_code=400, detail=f"Error processing Global Transfer Out Request: {str(e)}")
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/global-transfer-out/", response_model=List[schemas.GlobalTransferOutRequest])
@@ -2417,31 +2360,30 @@ async def create_ucf_global_records_release_form(
             request.form_data, dict) else request.form_data.__dict__
     else:
         # Fallback: exclude the basic fields and store the rest as form_data
-        form_data = request.dict(
+        form_data = request.model_dump(
             exclude={"student_name", "student_id", "program"})
 
-    # Create the database model instance
-    db_form = models.UCFGlobalRecordsReleaseForm(
-        student_name=request.student_name or f"{request.given_name} {request.family_name}",
-        student_id=request.student_id or request.ucf_id,
-        program=request.program or "UCF Global Records Release",
-        submission_date=datetime.now(),
-        status="pending",
-        form_data=form_data
+    # Determine student identifiers with fallbacks
+    student_id = request.student_id or request.ucf_id
+    given_name = request.given_name or ""
+    family_name = request.family_name or ""
+    program = request.program or "UCF Global Records Release"
+
+    # Create and commit DB record
+    db_request = create_db_record(
+        models.UCFGlobalRecordsReleaseForm,
+        student_id,
+        given_name,
+        family_name,
+        program,
+        form_data
     )
 
-    # Add to database and commit
-    try:
-        db.add(db_form)
-        db.commit()
-        db.refresh(db_form)
-        return db_form
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error creating UCF Global Records Release Form: {str(e)}"
-        )
+    return commit_to_db(
+        db,
+        db_request,
+        f"Created UCF Global Records Release Form with ID: {db_request.id}"
+    )
 
 
 @router.get("/ucf-global-records-release/", response_model=List[schemas.UCFGlobalRecordsReleaseForm])
@@ -2549,86 +2491,66 @@ async def create_virtual_checkin_request(
 ):
     """Create a new Virtual Check In Request with file uploads"""
     try:
-        print("Creating Virtual Check In Request...")
+        # Save all files with student ID
+        file_paths = await save_multiple_files(
+            files_dict={
+                "visa_notice_of_action": visa_notice_of_action,
+                "form_i94": form_i94,
+                "passport": passport,
+                "other_documents": other_documents
+            },
+            destination_dir=UPLOAD_PATHS["virtual_checkin"],
+            ucf_id=ucf_id
+        )
 
-        # Create student name from given and family name
-        student_name = f"{given_name} {family_name}".strip()
+        # Create form data
+        form_data = create_form_data_dict(
+            ucf_id=ucf_id,
+            given_name=given_name,
+            family_name=family_name,
+            email=ucf_email,
+            sevis_id=sevis_id,
+            visa_type=visa_type,
+            street_address=street_address,
+            apartment_number=apartment_number,
+            city=city,
+            state=state,
+            postal_code=postal_code,
+            us_telephone=us_telephone,
+            has_us_telephone=has_us_telephone,
+            secondary_email=secondary_email,
+            emergency_given_name=emergency_given_name,
+            emergency_family_name=emergency_family_name,
+            emergency_relationship=emergency_relationship,
+            emergency_street_address=emergency_street_address,
+            emergency_city=emergency_city,
+            emergency_state_province=emergency_state_province,
+            emergency_country=emergency_country,
+            emergency_postal_code=emergency_postal_code,
+            emergency_us_telephone=emergency_us_telephone,
+            emergency_non_us_telephone=emergency_non_us_telephone,
+            emergency_has_us_telephone=emergency_has_us_telephone,
+            emergency_has_non_us_telephone=emergency_has_non_us_telephone,
+            emergency_email=emergency_email,
+            has_dependents=has_dependents,
+            authorization_checked=authorization_checked,
+            **file_paths
+        )
 
-        # Create form data dictionary
-        form_data = {
-            "ucf_id": ucf_id,
-            "sevis_id": sevis_id,
-            "given_name": given_name,
-            "family_name": family_name,
-            "visa_type": visa_type,
-            "street_address": street_address,
-            "apartment_number": apartment_number,
-            "city": city,
-            "state": state,
-            "postal_code": postal_code,
-            "us_telephone": us_telephone,
-            "has_us_telephone": has_us_telephone,
-            "ucf_email": ucf_email,
-            "secondary_email": secondary_email,
-            "emergency_given_name": emergency_given_name,
-            "emergency_family_name": emergency_family_name,
-            "emergency_relationship": emergency_relationship,
-            "emergency_street_address": emergency_street_address,
-            "emergency_city": emergency_city,
-            "emergency_state_province": emergency_state_province,
-            "emergency_country": emergency_country,
-            "emergency_postal_code": emergency_postal_code,
-            "emergency_us_telephone": emergency_us_telephone,
-            "emergency_non_us_telephone": emergency_non_us_telephone,
-            "emergency_has_us_telephone": emergency_has_us_telephone,
-            "emergency_has_non_us_telephone": emergency_has_non_us_telephone,
-            "emergency_email": emergency_email,
-            "has_dependents": has_dependents,
-            "authorization_checked": authorization_checked
-        }
-
-        # Handle file uploads
-        upload_dir = "uploads/virtual_checkin"
-        os.makedirs(upload_dir, exist_ok=True)
-
-        file_fields = {
-            "visa_notice_of_action": visa_notice_of_action,
-            "form_i94": form_i94,
-            "passport": passport,
-            "other_documents": other_documents
-        }
-
-        for field_name, file in file_fields.items():
-            if file and file.filename:
-                file_path = await save_upload_file(file, upload_dir)
-                form_data[f"{field_name}_path"] = file_path
-                print(f"Saved {field_name}: {file_path}")
-
-        # Create database record
-        db_request = models.VirtualCheckInRequest(
-            student_name=student_name,
-            student_id=ucf_id,
-            program="Virtual Check In",
-            submission_date=datetime.now(),
-            status="pending",
-            form_data=form_data,
+        # Create and commit DB record
+        db_request = create_db_record(
+            models.VirtualCheckInRequest,
+            ucf_id, given_name, family_name,
+            "Virtual Check In",
+            form_data,
             remarks=remarks
         )
 
-        db.add(db_request)
-        db.commit()
-        db.refresh(db_request)
-
-        print(f"Created Virtual Check In Request with ID: {db_request.id}")
-        return db_request
+        return commit_to_db(db, db_request)
 
     except Exception as e:
         db.rollback()
-        print(f"Error creating Virtual Check In Request: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(
-            status_code=400, detail=f"Error processing Virtual Check In Request: {str(e)}")
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/virtual-checkin/", response_model=List[schemas.VirtualCheckInRequest])

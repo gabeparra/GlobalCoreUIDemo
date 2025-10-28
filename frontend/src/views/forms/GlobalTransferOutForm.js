@@ -44,6 +44,7 @@ export default function GlobalTransferOutForm() {
     })
 
     const [loading, setLoading] = useState(false)
+    const [admissionLetter, setAdmissionLetter] = useState(null)
     const [error, setError] = useState(null)
     const [success, setSuccess] = useState(false)
 
@@ -108,6 +109,10 @@ export default function GlobalTransferOutForm() {
                     formDataToSubmit.append(key, value)
                 }
             })
+
+            if (admissionLetter) {
+                formDataToSubmit.append('admission_letter', admissionLetter)
+            }
 
             console.log('Submitting Global Transfer Out Request:', formData)
 
@@ -411,18 +416,19 @@ export default function GlobalTransferOutForm() {
                         </CCol>
                     </CRow>
 
+                    <h5 className="border-bottom pb-2 mb-3 mt-4">Upload Documents (Optional)</h5>
                     <CRow className="mb-3">
                         <CCol>
-                            <CInputGroup>
-                                <CInputGroupText>
-                                    <CFormCheck
-                                        type="checkbox"
-                                        name="upload_admission_letter"
-                                        label="Upload New School Admission Letter"
-                                    />
-                                </CInputGroupText>
-                                <CFormInput type="file" />
-                            </CInputGroup>
+                            <CFormLabel>New School Admission Letter</CFormLabel>
+                            <CFormInput
+                                type="file"
+                                name="admission_letter"
+                                onChange={(e) => setAdmissionLetter(e.target.files[0])}
+                                accept=".pdf,.jpg,.jpeg,.png"
+                            />
+                            {admissionLetter && (
+                                <small className="text-muted">Selected: {admissionLetter.name}</small>
+                            )}
                         </CCol>
                     </CRow>
 
